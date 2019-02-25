@@ -143,6 +143,14 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
 
 
 
+
+
+/***************************************************************
+ * RATING
+ ***************************************************************/
+
+
+
 /***************************************************************
  * POST EDITOR - RATING Field box
  ***************************************************************/
@@ -164,39 +172,46 @@ function meta_box_rating() {
 function meta_box_rating_content() {
     // nonce field for security check, you can have the same
     // nonce field for all your meta boxes of same plugin
-    wp_nonce_field( plugin_basename( __FILE__ ), 'meta_box_rating_content_nonce' );
+    wp_nonce_field( plugin_basename( __FILE__ ), 'rating_nonce' );
 
     // get pre existing rating value
     $value = get_post_meta( $_GET['post'], 'rating', true );
     if( $value == '' )
     	$value = -999;
-    echo '<input type="number" min="-10" max="10" name="meta_box_rating_value" value="'.$value.'" > -10 ... 10 ';
+    echo '<input type="number" min="-10" max="10" name="rating_value" value="'.$value.'" > -10 ... 10 ';
 }
 
 /***************************************************************/
 // save data from checkboxes
-add_action( 'save_post', 'meta_box_rating_save', 10, 1 );
+add_action( 'save_post', 'rating_save', 10, 1 );
 /**
  * Add columns to management page
  * @param int $post_id
  * @return array
  */
-function meta_box_rating_save($post_id) {
+function rating_save($post_id) {
 // update_post_meta( $post_id, 'rating', 153 );
     // check if this isn't an auto save
     if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )
-        return;
+        return $post_id;
 
     // security check
-    if ( !wp_verify_nonce( $_POST['meta_box_rating_content_nonce'], plugin_basename( __FILE__ ) ) )
-        return;
+    if ( !wp_verify_nonce( $_POST['rating_nonce'], plugin_basename( __FILE__ ) ) )
+        return $post_id;
     
+    if ( ! current_user_can( 'edit_post', $post_id ) || 'post' != $_POST['post_type'] )
+        return $post_id;
+
+
     // get input rating and store it on the post metadata
-    $value = $_POST['meta_box_rating_value'];
+    $value = $_POST['rating_value'];
     // echo $value.'<br>';
     update_post_meta( $post_id, 'rating', $value );
     
 }
+
+
+
 
 
 
@@ -253,12 +268,13 @@ function quick_edit_rating( $column_name, $post_type ) {
     // $value = get_post_meta( $post_id, 'rating', true );
     // if( $value == '' )
     // 	$value = 0;
-    echo '<input type="number" min="-10" max="10" name="quick_edit_rating_value" class="ratingClass" value="1111"> Rating ';
+    wp_nonce_field( plugin_basename( __FILE__ ), 'rating_nonce' );
+    echo '<input type="number" min="-10" max="10" name="rating_value" class="ratingClass" value="1111"> Rating ';
 }
 
 /***************************************************************/
 // Quick edit save
-add_action( 'save_post', 'quick_edit_rating_save', 20, 1 );
+// add_action( 'save_post', 'quick_edit_rating_save', 20, 1 );
 /**
  * Save quick edit data
  * @param int $post_id
@@ -272,11 +288,11 @@ function quick_edit_rating_save( $post_id ) {
         return $post_id;
  
     // $data = get_post_meta( $post_id, 'rating', true );
-    $value = $_POST['quick_edit_rating_value'];
+    $value = $_POST['rating_value'];
     update_post_meta( $post_id, 'rating', $value );
 
     // echo '<br>AAAAAA<br>';
-    // echo $_POST['quick_edit_rating_value'];
+    // echo $_POST['rating_value'];
 }
 
 
