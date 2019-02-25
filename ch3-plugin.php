@@ -154,32 +154,29 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
 /***************************************************************
  * POST EDITOR - RATING Field box
  ***************************************************************/
-// register the meta box
-add_action( 'add_meta_boxes', 'meta_box_rating' );
-function meta_box_rating() {
-    add_meta_box(
-        'meta_box_rating_id',          // this is HTML id of the box on edit screen
-        'Post Rating',    // title of the box
-        'meta_box_rating_content',   // function to be called to display the checkboxes, see the function below
-        'post',        // on which edit screen the box should appear
-        'normal',      // part of page where the box should appear
-        'default'      // priority of the box
-    );
-}
 
-/***************************************************************/
-// display the metabox
-function meta_box_rating_content() {
-    // nonce field for security check, you can have the same
-    // nonce field for all your meta boxes of same plugin
+
+
+add_action( 'post_submitbox_misc_actions', 'add_rating_field' );
+
+function add_rating_field($post){
     wp_nonce_field( plugin_basename( __FILE__ ), 'rating_nonce' );
 
     // get pre existing rating value
     $value = get_post_meta( $_GET['post'], 'rating', true );
     if( $value == '' )
-    	$value = -999;
-    echo '<input type="number" min="-10" max="10" name="rating_value" value="'.$value.'" > -10 ... 10 ';
+        $value = -999;
+
+    echo '<div class="misc-pub-section">';
+    echo '<span class="dashicons dashicons-chart-bar" style="vertical-align: sub"></span>';
+    echo '<span class="rating" style="padding-left: 8px">Post Rating : <input type="number" min="-10" max="10" name="rating_value" value="'.$value.'" style="width: 4em"></span>';
+    echo '</div>';
+
+
+
 }
+
+
 
 /***************************************************************/
 // save data from checkboxes
@@ -259,17 +256,13 @@ add_action( 'quick_edit_custom_box', 'quick_edit_rating', 10, 2 );
 function quick_edit_rating( $column_name, $post_type ) {
     if ( 'rating' != $column_name )
         return;
- 
-    // printf( '
-    //     <input type="checkbox" name="headline_news" class="headline_news"> %s',
-    //     'Headline news position'
-    // );
 
-    // $value = get_post_meta( $post_id, 'rating', true );
-    // if( $value == '' )
-    // 	$value = 0;
     wp_nonce_field( plugin_basename( __FILE__ ), 'rating_nonce' );
-    echo '<input type="number" min="-10" max="10" name="rating_value" class="ratingClass" value="1111"> Rating ';
+    echo '<div class="inline-edit-group wp-clearfix">';
+    echo '<br>dsa <input type="number" min="-10" max="10" name="rating_value" class="ratingClass" value="1111">Rating ';
+    echo '</div>';
+
+
 }
 
 /***************************************************************/
