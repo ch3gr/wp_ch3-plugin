@@ -165,7 +165,7 @@ function add_rating_field($post){
     // get pre existing rating value
     $value = get_post_meta( $_GET['post'], 'rating', true );
     if( $value == '' )
-        $value = -999;
+        $value = 0;
 
     echo '<div class="misc-pub-section">';
     echo '<span class="dashicons dashicons-chart-bar" style="vertical-align: sub"></span>';
@@ -341,3 +341,111 @@ function expand_quick_edit_link( $actions, $post ) {
 
 
 // https://ducdoan.com/add-custom-field-to-quick-edit-screen-in-wordpress/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/***************************************************************
+ * GALLERY UPGRADE
+ ***************************************************************/
+
+
+
+/***************************************************************
+ * POST EDITOR - RATING Field box
+ ***************************************************************/
+add_action('print_media_templates', function(){
+?>
+<script type="text/html" id="tmpl-custom-gallery-setting">
+    <h3>Gallery Preset</h3>
+
+    <label class="setting">
+      <span><?php _e('Select'); ?></span>
+      <select data-setting="preset" id='selectPreset'>
+        <option value="images"> Image Gallery </option>
+        <option value="posts"> Post Collection </option>
+        <option value="custom"> Custom Options </option>
+      </select>
+    </label>
+        <label class="setting">
+        <span><?php _e('Textarea'); ?></span>
+        <textarea value="test" data-setting="ds_textarea" id="testField" style="float:left;"></textarea>
+    </label>
+
+
+    <h3 style="z-index: -1;">___________________________________________________________________________________________</h3>
+
+
+</script>
+
+<script>
+
+    $(function()
+    {
+        _.extend(wp.media.gallery.defaults, {
+        preset: 'custom',
+        });
+
+        wp.media.view.Settings.Gallery = wp.media.view.Settings.Gallery.extend({
+            template: function(view){
+              return wp.media.template('custom-gallery-setting')(view)
+                   + wp.media.template('gallery-settings')(view);
+            }
+        });
+        $('#selectPreset option[value="images"]').attr("selected", "selected");
+        $('.testField option[value="images"]');
+
+        $('#selectPreset').on('change', function() {
+            alert("aaa");
+            if ($(this).val() == 'custom') {
+                $('.link-to').prop('disabled', false);
+            } else {
+                // $('#selectTesty').reset();
+                $('.link-to').prop('disabled', true);
+            }
+        });
+    });
+
+
+
+    // $(function () {
+    //     $('#selectPreset').on('change', function() {
+    //         alert("aaa");
+    //         if ($(this).val() == 'custom') {
+    //             $('.link-to').prop('disabled', false);
+    //         } else {
+    //             // $('#selectTesty').reset();
+    //             $('.link-to').prop('disabled', true);
+    //         }
+    //     });
+
+    //     $('#selectPreset').val('images');
+    // });
+
+
+</script>
+
+
+
+<?php
+
+});
