@@ -37,7 +37,7 @@ function printLog($msg){
 
 
 /***************************************************************
- * Plugin Menu for testing
+ * Plugin Menu for testing -- REMOVE when done
  ***************************************************************/
 add_action('admin_menu', 'ch3_plugin_menu');
 
@@ -50,10 +50,42 @@ function ch3_plugin(){
 	echo "Start<br>";
 
 	printLog('Hello');
+
+
+// WTF different IPTC tag?
+$file = wp_upload_dir()['basedir'].'/Untitled-1.jpg';
+// $file = wp_upload_dir()['basedir'].'/ch3_181226_2678.jpg';
+echo $file;
+$exif = exif_read_data($file,'IFD0',true);
+
+$size = getimagesize($file, $info);
+    $iptc = iptcparse($info['APP13']);
+print("<pre>".print_r($iptc,true)."</pre>");
+
+
+if(isset($info['APP13']))
+{
+    $iptc = iptcparse($info['APP13']);
+    // var_dump($iptc);
+    print("<pre>".print_r($iptc,true)."</pre>");
+
+}
+
+
+    // $file = ' D:/myStuff/ch3/web/v4.ch3.gr/file/Untitled-1.jpg';
+    //$exif = exif_read_data($file);
+    // $exif = exif_read_data(get_attached_file(260));
+    // print_r( $exif );
+    // print("<pre>".print_r($exif,true)."</pre>");
+
+
 	
 	echo "<br>--------------<br>";
 	echo "<br>-- D O N E ---<br>";
 }
+
+
+
 
 
 
@@ -95,6 +127,7 @@ function my_wp_image_editors($editors) {
 // Include the existing classes first in order to extend them.
 require_once ABSPATH.WPINC."/class-wp-image-editor.php";
 require_once ABSPATH.WPINC."/class-wp-image-editor-gd.php";
+define('UPLOADS', 'file');
 
 class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
     public function generate_filename($prefix = NULL, $dest_path = NULL, $extension = NULL) {
@@ -132,6 +165,69 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
     return $sizes;
 }
 }
+
+
+
+
+
+
+
+
+
+
+/***************************************************************
+ * ITPC Automatically populate image attachment metadata
+ ***************************************************************/
+function aqq_populate_img_meta($post_id) {
+    // get image info
+    getimagesize(get_attached_file($post_id), $info);
+    // print( isset($info['APP13']) );
+    // parse it for iptc
+    if(isset($info['APP13']))
+    {
+        $iptc = iptcparse($info['APP13']);
+        // var_dump($iptc);
+        print("<pre>".print_r($iptc,true)."</pre>");
+
+        $title = $iptc['2#005'][0];
+
+        if( !empty( $title ) )
+            wp_update_post(array('ID' => $post_id, 'post_title' => $title));
+        // wp_update_post(array('ID' => $post_id, 'post_excerpt' => $caption));
+        // update_post_meta($post_id, '_wp_attachment_image_alt', $alt);
+        // wp_update_post(array('ID' => $post_id, 'post_content' => $description));
+
+    // echo $$exif_excerpt;
+    echo '<________>';
+    echo $title;
+    echo '<________>';
+    // print("<pre>".print_r($exif,true)."</pre>");
+    }
+    
+
+
+
+
+}
+ 
+add_filter('add_attachment', 'aqq_populate_img_meta');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -547,7 +643,7 @@ function my_post_gallery( $output, $attr) {
                     margin: auto;
                 }
                 #{$selector} img {
-                    border: 1px solid red;
+                    border: 1px solid green;
                 }
                 
             </style>
