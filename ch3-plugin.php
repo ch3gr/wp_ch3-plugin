@@ -51,35 +51,91 @@ function ch3_plugin(){
 
 	printLog('Hello');
 
+    // include "PHP_JPEG_Metadata_Toolkit_1.12/IPTC.php"; 
 
-// WTF different IPTC tag?
-$file = wp_upload_dir()['basedir'].'/Untitled-1.jpg';
-// $file = wp_upload_dir()['basedir'].'/ch3_181226_2678.jpg';
+/*
+echo "<br>--------------<br>";    
+$file = wp_upload_dir()['basedir'].'/iptc_broken.jpg';
 echo $file;
-$exif = exif_read_data($file,'IFD0',true);
 
+echo "<br>------WP READ--------<br>";   
+$wpRead = wp_read_image_metadata($file);
+print("<pre>".print_r($wpRead,true)."</pre>");
+
+
+echo "<br>------------------<br>"; 
+echo "<br>------------------<br>"; 
+echo "<br>------------------<br>"; 
+echo "<br>------------------<br>"; 
+echo "<br>------EXIF--------<br>";   
+$exif = exif_read_data($file,'IFD0',true);
+print("<pre>".print_r($exif,true)."</pre>");
+
+
+echo "<br>------INFO--------<br>";   
+unset($info);
 $size = getimagesize($file, $info);
-    $iptc = iptcparse($info['APP13']);
+
+print("<pre>".print_r($info,true)."</pre>");
+
+echo "<br>------IPTC--------<br>";   
+$iptc = iptcparse($info['APP13']);
 print("<pre>".print_r($iptc,true)."</pre>");
 
 
-if(isset($info['APP13']))
-{
-    $iptc = iptcparse($info['APP13']);
-    // var_dump($iptc);
-    print("<pre>".print_r($iptc,true)."</pre>");
+// if(isset($info['APP13']))
+// {
+//     $iptc = iptcparse($info['APP13']);
+//     // var_dump($iptc);
+//     print("<pre>".print_r($iptc,true)."</pre>");
 
-}
+// }
+
+echo "<br>--------------<br>";
+echo "<br>--------------<br>";
+echo "<br>--------------<br>";
+// second file
+/*
+$file = wp_upload_dir()['basedir'].'/ch3_190101_3403.jpg';
+echo $file;
+echo "<br>------EXIF--------<br>";   
+$exif = exif_read_data($file,'IFD0',true);
+print("<pre>".print_r($exif,true)."</pre>");
 
 
-    // $file = ' D:/myStuff/ch3/web/v4.ch3.gr/file/Untitled-1.jpg';
-    //$exif = exif_read_data($file);
-    // $exif = exif_read_data(get_attached_file(260));
-    // print_r( $exif );
-    // print("<pre>".print_r($exif,true)."</pre>");
+echo "<br>------IPTC--------<br>";   
+unset($info);
+$size = getimagesize($file, $info);
+$iptc = iptcparse($info['APP13']);
+print("<pre>".print_r($iptc,true)."</pre>");
 
+echo "<br>------IPTC 2--------<br>";   
+
+$data = get_IPTC($file);
+print("<pre>".print_r($data,true)."</pre>");
+
+
+// if(isset($info['APP13']))
+// {
+//     $iptc = iptcparse($info['APP13']);
+//     // var_dump($iptc);
+//     print("<pre>".print_r($iptc,true)."</pre>");
+*/
+// }
 
 	
+    $img = 303;
+    $meta = wp_get_attachment_metadata( $img );
+    print("<pre>".print_r($meta,true)."</pre>");
+
+    foreach ( $meta['sizes'] as $size) {
+        $file = wp_normalize_path( wp_upload_dir()['basedir'] ."/". $size['file'] );
+        print( "Deleting file ". $file ."<br>");
+        wp_delete_file(  $file );
+
+    }
+
+
 	echo "<br>--------------<br>";
 	echo "<br>-- D O N E ---<br>";
 }
@@ -174,7 +230,7 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
 
 
 
-
+// WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP 
 /***************************************************************
  * ITPC Automatically populate image attachment metadata
  ***************************************************************/
@@ -187,7 +243,7 @@ function aqq_populate_img_meta($post_id) {
     {
         $iptc = iptcparse($info['APP13']);
         // var_dump($iptc);
-        print("<pre>".print_r($iptc,true)."</pre>");
+        // print("<pre>".print_r($iptc,true)."</pre>");
 
         $title = $iptc['2#005'][0];
 
@@ -198,32 +254,58 @@ function aqq_populate_img_meta($post_id) {
         // wp_update_post(array('ID' => $post_id, 'post_content' => $description));
 
     // echo $$exif_excerpt;
-    echo '<________>';
-    echo $title;
-    echo '<________>';
+    // echo '<________>';
+    // echo $title;
+    // echo '<________>';
     // print("<pre>".print_r($exif,true)."</pre>");
     }
-    
-
-
-
-
 }
  
-add_filter('add_attachment', 'aqq_populate_img_meta');
+// add_filter('add_attachment', 'aqq_populate_img_meta');
 
 
 
 
 
+// WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP 
+/***************************************************************
+ * Bulk Action to update images
+ ***************************************************************/
+function register_my_bulk_update_images($bulk_actions) {
+  $bulk_actions['bulk_update_images'] = __( 'Update Images', 'bulk_update_images');
+  return $bulk_actions;
+}
+add_filter( 'bulk_actions-upload', 'register_my_bulk_update_images' );
 
 
+ 
+function bulk_update_images_handler( $redirect_to, $doaction, $post_ids ) {
+  if ( $doaction !== 'bulk_update_images' ) {
+    return $redirect_to;
+  }
+  foreach ( $post_ids as $post_id ) {
+    if( wp_attachment_is_image( $post_id ) ) {
+        print("ss");
+    }
+  }
+  $redirect_to = add_query_arg( 'bulk_update_images', count( $post_ids ), $redirect_to );
+  return $redirect_to;
+}
+add_filter( 'handle_bulk_actions-upload', 'bulk_update_images_handler', 10, 3 );
 
 
-
-
-
-
+function my_bulk_action_admin_notice() {
+  if ( ! empty( $_REQUEST['bulk_update_images'] ) ) {
+    $image_count = intval( $_REQUEST['bulk_update_images'] );
+    printf( '<div id="message" class="updated fade">' .
+      _n( 'Updated %s images.',
+        'Updated %s images.',
+        $image_count,
+        'bulk_update_images'
+      ) . '</div>', $image_count );
+  }
+}
+add_action( 'admin_notices', 'my_bulk_action_admin_notice' );
 
 
 
