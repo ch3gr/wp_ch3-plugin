@@ -12,6 +12,28 @@ Version: 1.0
 Author URI: http://ch3.gr
 */
 
+
+// include 'vars.php';
+//ini_set('max_execution_time', 60*60*10);
+
+// error_reporting ( 0 );
+
+
+
+// $GLOBALS['HIDE_UNKNOWN_TAGS'] = TRUE;
+// $toolkit_Dir = "PHP_JPEG_Metadata_Toolkit_1.12/";
+$toolkit_Dir = "PJMT/";
+include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'Toolkit_Version.php');
+include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'JPEG.php');
+include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'JFIF.php');
+include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'PictureInfo.php');
+include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'XMP.php');
+include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'Photoshop_IRB.php');
+include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'EXIF.php');
+include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'Photoshop_File_Info.php');
+
+
+
 /***************************************************************
  * SECURITY : Exit if accessed directly
  ***************************************************************/
@@ -21,7 +43,6 @@ if ( !defined( 'ABSPATH' ) ) {
 	
 }
 
-//ini_set('max_execution_time', 60*60*10);
 
 
 
@@ -34,6 +55,109 @@ function printLog($msg){
 	fwrite($file, $msg);
 	fclose($file);
 }
+
+
+/***************************************************************
+ * Recursive directory listing
+ ***************************************************************/
+function getDirContents($dir, &$results = array()){
+    $files = scandir($dir);
+
+    foreach($files as $key => $value){
+        $path = realpath($dir.DIRECTORY_SEPARATOR.$value);
+        if(!is_dir($path)) {
+            $results[] = $path;
+        } else if($value != "." && $value != "..") {
+            getDirContents($path, $results);
+            $results[] = $path;
+        }
+    }
+
+    return $results;
+}
+
+
+
+
+/***************************************************************
+ * GET META DATA
+ ***************************************************************/
+// NEED TO DO IT ALL IN ONE FUNCTION
+function recursive_array_search($needle, $haystack, $currentKey = '') {
+    foreach($haystack as $key=>$value) {
+        if (is_array($value)) {
+            $nextKey = recursive_array_search($needle,$value, $currentKey . '[' . $key . ']');
+            if ($nextKey) {
+                return $nextKey;
+            }
+        }
+        else if($value==$needle) {
+            return is_numeric($key) ? $currentKey . '[' .$key . ']' : $currentKey;
+            // return $key;
+        }
+    }
+    return false;
+}
+function get_deep_key( $string, $vars )
+{
+    $keys = explode( '][', substr( $string, 1, -1 ) );
+    foreach( $keys as $key ) {
+        $vars = $vars[$key];
+    }
+    return $vars;
+}
+
+// function extract_tag_value($tag, $array) {
+//     $path = recursive_array_search($tag, $array);
+//     return get_deep_key( $path.'[value]', $array );
+// }
+
+
+//  Need to rewrite and use single function for finding [value] from [tag]
+function extract_tag_value($tag, $array) {
+    $path = recursive_array_search($tag, $array);
+
+    $keys = explode( '][', substr( $path.'[value]', 1, -1 ) );
+    foreach( $keys as $key ) {
+        $array = $array[$key];
+    }
+    return $array;
+}
+
+function getMetadata($filename){
+    $jpeg_header_data = get_jpeg_header_data( $filename );
+    $Exif_array = get_EXIF_JPEG( $filename );
+    $XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
+
+    $metadata = array();
+    $metadata['Location'] = extract_tag_value('Iptc4xmpCore:Location', $XMP_array);
+    $metadata['City'] = extract_tag_value('photoshop:City', $XMP_array);
+    $metadata['State'] = extract_tag_value('photoshop:State', $XMP_array);
+    $metadata['Country'] = extract_tag_value('photoshop:Country', $XMP_array);
+
+    $metadata['Date'] = extract_tag_value('Exif Version', $Exif_array);
+
+    return $metadata;
+}
+
+// function find_metadata($needle, $haystack) {
+//     foreach($haystack as $key=>$value) {
+//         if (is_array($value)) {
+//             if( array_key_exists('tag', $value) && array_key_exists('value', $value) && $value['tag']==$needle)
+//                     return $value['value'];
+//             else
+//                 find_metadata($needle, $value);
+//         }
+//     }
+//     return false;
+// }
+
+/***************************************************************
+ * GET META DATA                    END END END
+ ***************************************************************/
+
+
+
 
 
 /***************************************************************
@@ -53,33 +177,65 @@ function ch3_plugin(){
 
     // include "PHP_JPEG_Metadata_Toolkit_1.12/IPTC.php"; 
 
-/*
+
 echo "<br>--------------<br>";    
-$file = wp_upload_dir()['basedir'].'/iptc_broken.jpg';
-echo $file;
+// $file = wp_upload_dir()['basedir'].'/iptc_fixed.jpg';
+// $file = wp_normalize_path("D:/myStuff/ch3/web/v4.ch3.gr/file/test/iptc_fixed.jpg");
+// $file = wp_normalize_path("D:/myStuff/ch3/web/v4.ch3.gr/file/test/iptc_broken.jpg");
+// echo $file;
 
-echo "<br>------WP READ--------<br>";   
-$wpRead = wp_read_image_metadata($file);
-print("<pre>".print_r($wpRead,true)."</pre>");
-
-
-echo "<br>------------------<br>"; 
-echo "<br>------------------<br>"; 
-echo "<br>------------------<br>"; 
-echo "<br>------------------<br>"; 
-echo "<br>------EXIF--------<br>";   
-$exif = exif_read_data($file,'IFD0',true);
-print("<pre>".print_r($exif,true)."</pre>");
+echo "<br>------ exif --------<br>";   
+// $wpRead = wp_read_image_metadata($file);
+// print("<pre>".print_r($wpRead,true)."</pre>");
+// $exif = exif_read_data($file,'IFD0',true);
+// print("<pre>".print_r($exif,true)."</pre>");
 
 
-echo "<br>------INFO--------<br>";   
-unset($info);
-$size = getimagesize($file, $info);
+echo "<br>------ check --------<br>";   
 
-print("<pre>".print_r($info,true)."</pre>");
+// check if it's broken
+echo "<br>------ broken --------<br>";   
+$files = getDirContents('D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs');
+// $files = getDirContents('D:/myStuff/My Pictures/digi/2019');
+// $files = getDirContents('D:/myStuff/My Pictures/digi/2018');
+
+foreach($files as $file) {
+
+    // print( end(explode(".", $file)) . "______");
+    // print($file . "<br>");
+    if( end(explode(".", $file)) == "jpg" ) {
+        print($file);
+        unset($info);
+        $size = getimagesize($file, $info);
+        $iptc = iptcparse($info['APP13']);
+        if( $iptc == "" )
+            print( " <-- broken ");
+            // print($file . "<br>");
+    }
+
+    print("<br>");
+
+
+}
+echo "<br>------ check end --------<br>";   
+
 
 echo "<br>------IPTC--------<br>";   
-$iptc = iptcparse($info['APP13']);
+$file = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/ch3_190516_0002.jpg";
+// $exif = exif_read_data($file,'IFD0',true);
+// print("<pre>".print_r($exif,true)."</pre>");
+
+unset($info);
+$size = getimagesize($file, $info);
+// print("<pre>".print_r($info,true)."</pre>");
+
+echo "<br>------RAW--------<br>";
+// $content = $info['APP13'];
+// print("<pre>".print_r($content,true)."</pre>");
+// echo "<br>--------------<br>";
+
+
+$iptc = iptcparse($info['APP14']);
 print("<pre>".print_r($iptc,true)."</pre>");
 
 
@@ -91,10 +247,67 @@ print("<pre>".print_r($iptc,true)."</pre>");
 
 // }
 
+
+
+echo "<br>--------------<br>";
+echo "<br>----      ----<br>";
+echo "<br>--------------<br>";
+
+
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/ch3_190516_0001.jpg";
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/iptc_broken.jpg";
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/iptc_fixed.jpg";
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/ch3_180611_2074.jpg";
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/ch3_180611_2075.jpg";
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/fresh_1_add.jpg";
+$filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/fresh_1-MEM.jpg";
+// Retrieve the header information from the JPEG file
+$jpeg_header_data = get_jpeg_header_data( $filename );
+// Retrieve EXIF information from the JPEG file
+$Exif_array = get_EXIF_JPEG( $filename );
+// Retrieve XMP information from the JPEG file
+$XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
+// Retrieve Photoshop IRB information from the JPEG file
+// $IRB_array = get_Photoshop_IRB( $jpeg_header_data );
+// Retrieve Photoshop File Info from the three previous arrays
+// $new_ps_file_info_array = get_photoshop_file_info( $Exif_array, $XMP_array, $IRB_array );
+
+echo "<br>------EXIF--------<br>";
+print("<pre>".print_r( $Exif_array ,true)."</pre>");
+echo "<br>------XMP--------<br>";
+print("<pre>".print_r( $XMP_array ,true)."</pre>");
+
+// print("<pre>".print_r( $XMP_array[0]['children'][0]['children'][0] ,true)."</pre>");
+
+// $a = recursive_array_search('photoshop:City', $XMP_array);
+// print($a ."<br>");
+// echo get( $a.'[value]', $XMP_array );
+
+// echo get( recursive_array_search('Iptc4xmpCore:Location', $XMP_array).'[value]', $XMP_array );
+// echo get( '[0][children][0][children][0][children][0][value]', $XMP_array );
+echo "<br>--------------<br>";
+// echo extract_tag_value('Iptc4xmpCore:Location', $XMP_array);
+// echo "<br>";
+// echo extract_tag_value('photoshop:Country', $XMP_array);
+
+
+print("<pre>".print_r( getMetadata($filename) ,true)."</pre>");
+
+// echo Interpret_EXIF_to_HTML($Exif_array, $filename);
+// echo Interpret_XMP_to_HTML($XMP_array, $filename);
+
+// Check for operation mode 4 - $new_ps_file_info_array and $filename are not defined,
+// $new_ps_file_info_array = array("keywords" => array());
+// foreach( $new_ps_file_info_array[ 'keywords' ] as $keyword )
+        // echo "$keyword, ";
+
+
+
 echo "<br>--------------<br>";
 echo "<br>--------------<br>";
-echo "<br>--------------<br>";
-// second file
+
+
+
 /*
 $file = wp_upload_dir()['basedir'].'/ch3_190101_3403.jpg';
 echo $file;
@@ -123,19 +336,65 @@ print("<pre>".print_r($data,true)."</pre>");
 */
 // }
 
-	
-    $img = 303;
+ //    print( "<br>----0---<br>" );
+	// $postId = 246;
+ //    $children = get_children($postId);
+ //    print("<pre>".print_r($children,true)."</pre>");
+
+
+ //    print( "<br>----1---<br>" );
+ //    print("<pre>".print_r($children[295],true)."</pre>");
+ //    print( "<br>----1---<br>" );
+
+    // require_once( ABSPATH . 'wp-admin/includes/image.php' );
+
+
+
+
+
+// re-gen thumbs
+/*
+    $img = 298;
+    // $img = $children[295]->ID;
     $meta = wp_get_attachment_metadata( $img );
     print("<pre>".print_r($meta,true)."</pre>");
 
-    foreach ( $meta['sizes'] as $size) {
-        $file = wp_normalize_path( wp_upload_dir()['basedir'] ."/". $size['file'] );
-        print( "Deleting file ". $file ."<br>");
-        wp_delete_file(  $file );
-
-    }
+    print( "<br>----1---<br>" );
+    $fullsizepath = wp_get_attachment_url($img);
+    print( $fullsizepath );
 
 
+    print( "<br>----2---<br>" );
+    // unset($meta['sizes']['thumbnail']);
+    // print("<pre>".print_r($meta,true)."</pre>");
+    // wp_update_attachment_metadata( $img, $meta );
+
+    print("<pre>".print_r(get_intermediate_image_sizes(),true)."</pre>");
+
+    // if ( false !== $fullsizepath && file_exists( $fullsizepath ) ) {
+        // $meta1 = wp_generate_attachment_metadata( $img, $fullsizepath );
+        // wp_update_attachment_metadata( $img, $meta1 );
+
+        // print("<pre>".print_r($meta1,true)."</pre>");
+        print( "<br>----UPDATE---<br>" );
+    // }
+
+    $img_path = 'D:/myStuff/ch3/web/v4.ch3.gr/file/ch3_102-17.jpg';
+    $gd_image_editor = new WP_Image_Editor_GD($img_path); 
+    $gd_image_editor->load(); 
+    // $gd_image_editor->resize(300,450,false); 
+    $gd_image_editor->multi_resize(get_intermediate_image_sizes());
+    $gd_image_editor->save($img_path);
+
+        // print("<pre>".print_r($meta1,true)."</pre>");
+
+        // foreach ( $meta['sizes'] as $size) {
+        //     $file = wp_normalize_path( wp_upload_dir()['basedir'] ."/". $size['file'] );
+        //     print( "Deleting file ". $file ."<br>");
+        //     // wp_delete_file(  $file );
+        // }
+
+*/
 	echo "<br>--------------<br>";
 	echo "<br>-- D O N E ---<br>";
 }
