@@ -18,8 +18,6 @@ Author URI: http://ch3.gr
 
 // error_reporting ( 0 );
 
-
-
 // $GLOBALS['HIDE_UNKNOWN_TAGS'] = TRUE;
 // $toolkit_Dir = "PHP_JPEG_Metadata_Toolkit_1.12/";
 // https://github.com/evanhunter/PJMT
@@ -32,6 +30,9 @@ include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'XMP.php');
 include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'Photoshop_IRB.php');
 include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'EXIF.php');
 include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'Photoshop_File_Info.php');
+
+
+include( plugin_dir_path( __FILE__ ) . 'ch3-metadata.php');
 
 
 
@@ -83,87 +84,22 @@ function getDirContents($dir, &$results = array()){
 
 
 
-/***************************************************************
- * GET META DATA
- ***************************************************************/
-
-// Recursive function to locate desired metadata tag
-// get_tag_value( $ar, 'photoshop:Country', 'tag', 'value'){
-function get_tag_value(array &$metadata, $tag, $keyname, $dataname){
-    // echo ' A IN<br>';
-    unset( $out );
-    if( is_array($metadata) ){
-        // echo ' B<br>';
-       if( array_key_exists($keyname, $metadata) && 
-           array_key_exists($dataname, $metadata) &&
-           $metadata[$keyname]==$tag ){
-
-            // echo '__FOUND__<br>';
-            $out = $metadata[$dataname];
-        } else {
-            foreach ($metadata as $key => $value) {
-                // echo ' D ' . $key . ' ' . $value. " " .is_array($value) .' <br>';
-                if( is_array($value) ){
-                    // echo ' E <br>';
-                    $out = get_tag_value($value, $tag, $keyname, $dataname);
-                    if( isset($out) )
-                        break;
-                }
-            }
-        }
-    }
-    // echo ' F OUT<br>';
-    if( isset( $out )){
-        // echo ' C ' . $out. ' <br>';
-        return $out;
-    }
-}
 
 
 
 
 
 
-function getMetadata($filename){
-    $jpeg_header_data = get_jpeg_header_data( $filename );
-    $Exif_array = get_EXIF_JPEG( $filename );
-    $XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
-
-    $metadata = array();
-
-    $location = get_tag_value( $XMP_array, 'Iptc4xmpCore:Location', 'tag', 'value');
-    if( $location != '' )
-        $metadata['location'] = $location;
-
-    $city = get_tag_value( $XMP_array, 'photoshop:City', 'tag', 'value');
-    if( $city != '' )
-        $metadata['city'] = $city;
-
-    $state = get_tag_value( $XMP_array, 'photoshop:State', 'tag', 'value');
-    if( $state != '' )
-        $metadata['state'] = $state;
-
-    $country = get_tag_value( $XMP_array, 'photoshop:Country', 'tag', 'value');
-    if( $country != '' )
-        $metadata['country'] = $country;
-    
-    $caption = get_tag_value( $XMP_array, 'rdf:li', 'tag', 'value');
-    if( $caption != '' )
-        $metadata['caption'] = $caption;
-
-    $date = get_tag_value( $Exif_array, 'Date and Time of Original', 'Tag Name', 'Text Value');
-    if( $date != '' )
-        $metadata['date'] = $date;
-
-
-    return $metadata;
-}
 
 
 
-/***************************************************************
- * GET META DATA                    END END END
- ***************************************************************/
+
+
+
+
+
+
+
 
 
 
@@ -221,12 +157,13 @@ echo "<br>------ check --------<br>";
 
 // check if it's broken
 echo "<br>------ broken --------<br>";   
-$files = getDirContents('D:/myStuff/ch3/web/v4.ch3.gr/file/metadata_bs');
+// $files = getDirContents('D:/myStuff/ch3/web/v4.ch3.gr/file/fieldsTest');
+// $files = getDirContents('D:/myStuff/ch3/web/v4.ch3.gr/file/metadata_bs');
 // $files = getDirContents('D:/myStuff/My Pictures/digi/2019');
 // $files = getDirContents('D:/myStuff/My Pictures/digi/2018');
-// $files = getDirContents('D:/myStuff/My Pictures/digi/2018/2018_12_26_-_ColoradoPlateau');
+$files = getDirContents('D:/myStuff/My Pictures/digi/2018/2018_12_26_-_ColoradoPlateau');
 
-
+if(0)
 foreach($files as $file) {
 
     // print( end(explode(".", $file)) . "______");
@@ -289,9 +226,11 @@ echo "<br>--------------<br>";
 // $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/ch3_180611_2075.jpg";
 // $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/fresh_1_add.jpg";
 // $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/fresh_1-MEM.jpg";
-$filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/metadata_bs/ch3_190101_3403.jpg";
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/metadata_bs/ch3_190101_3403.jpg";
 // $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/metadata_bs/ch3_190101_3250.jpg";
-
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/metadata_bs/ch3_181229_104728.jpg";
+// $filename = "D:/myStuff/ch3/web/v4.ch3.gr/file/fieldsTest/fresh_MEM.jpg";
+$filename = "D:/myStuff/My Pictures/digi/2018/2018_12_26_-_ColoradoPlateau/ch3_181226_140800.jpg";
 
 // Retrieve the header information from the JPEG file
 $jpeg_header_data = get_jpeg_header_data( $filename );
@@ -303,14 +242,14 @@ $XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
 // $IRB_array = get_Photoshop_IRB( $jpeg_header_data );
 // Retrieve Photoshop File Info from the three previous arrays
 // $new_ps_file_info_array = get_photoshop_file_info( $Exif_array, $XMP_array, $IRB_array );
-$IPTC_array = get_IPTC($jpeg_header_data);
+// $IPTC_array = get_IPTC($jpeg_header_data);
 
 echo "<br>------EXIF--------<br>";
-print("<pre>".print_r( $Exif_array ,true)."</pre>");
+// print("<pre>".print_r( $Exif_array ,true)."</pre>");
 echo "<br>------XMP--------<br>";
-print("<pre>".print_r( $XMP_array ,true)."</pre>");
+// print("<pre>".print_r( $XMP_array ,true)."</pre>");
 echo "<br>------IPTC--------<br>";
-print("<pre>".print_r( $IPTC_array ,true)."</pre>");
+// print("<pre>".print_r( $IPTC_array ,true)."</pre>");
 
 // print("<pre>".print_r( $XMP_array[0]['children'][0]['children'][0] ,true)."</pre>");
 
@@ -320,10 +259,33 @@ print("<pre>".print_r( $IPTC_array ,true)."</pre>");
 
 // echo get( recursive_array_search('Iptc4xmpCore:Location', $XMP_array).'[value]', $XMP_array );
 // echo get( '[0][children][0][children][0][children][0][value]', $XMP_array );
-echo "<br>--------------<br>";
+echo "<br>------ +++ ----<br>";
 // echo extract_tag_value('Iptc4xmpCore:Location', $XMP_array);
 // echo "<br>";
 // echo extract_tag_value('photoshop:Country', $XMP_array);
+
+
+// $t = get_tag_block( $XMP_array, 'dc:description', 'tag');
+// print("<pre>".print_r( $t ,true)."</pre>");
+// $s = get_value( $t, 'value');
+// echo "<br>------oooo-----<br>";
+// print("<pre>".print_r( $s ,true)."</pre>");
+
+// echo get_tag_value( $XMP_array, 'dc:description', 'tag', 'value');
+// echo get_tag_value( $XMP_array, 'dc:description', 'tag', 'value');
+// echo get_tag_value( $XMP_array, 'photoshop:State', 'tag', 'value');
+// echo get_tag_value( $Exif_array, 'Date and Time of Original', 'Tag Name', 'Text Value');
+// $keywords = get_tag_values( $XMP_array, 'dc:subject', 'tag', 'value');
+// $keywords = get_tag_values( $XMP_array, 'dc:creator', 'tag', 'value');
+// print("<pre>".print_r( $keywords ,true)."</pre>");
+echo "<br>------oooo-----<br>";
+
+
+// echo get_tag_value( $XMP_array, 'Iptc4xmpCore:Location', 'tag', 'value');
+
+// print("<pre>".print_r( getMetadata($filename) ,true)."</pre>");
+
+
 
 if(1)
 foreach($files as $file) {
