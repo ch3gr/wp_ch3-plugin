@@ -29,7 +29,20 @@ Author URI: http://ch3.gr
 //  GALLERY UPGRADE
 
 
+// General upload directory
+define('UPLOADS', 'file');
 
+$customDir = array();
+
+$customDir['uploads'] = 'file';
+$customDir['images'] = 'img';
+$customDir['intermediate'] = 'int';
+
+define('UPLOADS', $customDir['uploads']);
+
+$customDir['uploads_full'] = wp_normalize_path( wp_upload_dir()['path'] ) ;
+$customDir['images_full'] = $customDir['uploads_full'] . '/' . $customDir['images'];
+$customDir['intermediate_full'] = $customDir['images_full'] .'/' .$customDir['intermediate'];
 
 
 
@@ -164,6 +177,12 @@ function ch3_plugin(){
 	// printLog('Hello');
 
     // include "PHP_JPEG_Metadata_Toolkit_1.12/IPTC.php"; 
+
+    global $customDir;
+    print('<br>--------------<br>');
+    print_ar( wp_upload_dir() );
+    print('<br>--------------<br>');
+    print_ar($customDir);
 
 
 echo "<br>--------------<br>";    
@@ -541,8 +560,7 @@ function select_wp_image_editors( $editors ) {
  * CUSTOM UPLOAD location
  ***************************************************************/
 
-// General upload directory
-define('UPLOADS', 'file');
+
 
 //  http://v4.ch3.gr/file/media.*
 //  http://v4.ch3.gr/file/img/ch3_145-33.jpg
@@ -562,6 +580,7 @@ function my_wp_image_editors($editors) {
 
 
 class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
+
     public function generate_filename($prefix = NULL, $dest_path = NULL, $extension = NULL) {
         // If empty, generate a prefix with the parent method get_suffix().
         if(!$prefix)
@@ -585,15 +604,17 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
         // $dir = trailingslashit($dir)."{$prefix}/{$name}.{$new_ext}";
         //.jpg and .jpeg, .png and .gif
         // if( $new_ext == 'jpg' || $new_ext == 'jpeg' || $new_ext == 'png' || $new_ext == 'gif' )
-        $dir = trailingslashit($dir)."int/{$name}_{$prefix}.{$new_ext}";
+        global $customDir;
+        $dir = trailingslashit($dir). $customDir['intermediate'] . "/{$name}_{$prefix}.{$new_ext}";
         return $dir;
     }
 
     //  Provide the same path when doing the multi resize
     function multi_resize($sizes) {
+        global $customDir;
         $sizes = parent::multi_resize($sizes);
         foreach($sizes as $slug => $data)
-            $sizes[$slug]['file'] = "int/".$data['file'];
+            $sizes[$slug]['file'] = $customDir['intermediate'] . "/" .$data['file'];
 
         return $sizes;
     }
@@ -618,7 +639,9 @@ function custom_upload_filter( $file ){
 
 // Filter is only added for images when custom_upload_filter is also called. Trick that works
 function image_dir( $param ){
-    $mydir = '/img';
+    global $customDir;
+
+    $mydir = '/' . $customDir['images'];
 
     $param['path'] = $param['path'] . $mydir;
     $param['url'] = $param['url'] . $mydir;
@@ -650,12 +673,12 @@ function image_dir( $param ){
 
 
 
-// WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP 
 /***************************************************************
  * METADATA
  ***************************************************************/
+//  Populate title, caption, alt text with the metadata from jpg
+/////////////////////////////////////////////////////////////////
 add_filter('add_attachment', 'populate_img_metadata');
-
 
 function populate_img_metadata($img_id) {
     
@@ -699,38 +722,36 @@ function populate_img_metadata($img_id) {
 
 
 }
- 
 
-// function filter_wp_generate_attachment_metadata( $metadata, $img_id ) { 
-function filter_wp_update_attachment_metadata( $data, $img_id ) { 
-    // make filter magic happen here... 
 
-    // Restore Metadata on all intermediate files
+// Restore Metadata on all intermediate files
+/////////////////////////////////////////////////////////////////
+add_filter( 'wp_generate_attachment_metadata', 'filter_wp_generate_attachment_metadata', 10, 2 ); 
+
+function filter_wp_generate_attachment_metadata( $metadata, $img_id ) { 
     $file = wp_normalize_path(get_attached_file( $img_id ));
-    echo $file .'<----------<br>';
+    // All data exist in $metadata, don't use the wp function to query DB
 
-    print_ar( scandir('D:/myStuff/ch3/web/v4.ch3.gr/file/img/int'));
+    // Uses global var for custom folder structure
+    global $customDir;
 
+    // Get metadata - function from PJMT
     $jpeg_header_data = get_jpeg_header_data( $file );
-    // $Exif_array = get_EXIF_JPEG( $file );
-    // $XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
     foreach( get_intermediate_image_sizes() as $size ){
-        $int = wp_get_attachment_image_src( $img_id, $size, false )[0] ;
-        print_ar( wp_get_attachment_image_src( $img_id, $size, false ) );
-        // echo $int .'<br>';
 
-        // $int = wp_basename( $int );
-        // $int = wp_upload_dir()['path'] . '/img/int/' . $int;
-        // $int = wp_normalize_path( $int );
+        // constract the file name of the intermediate file on dist
+        $intFile = $metadata['sizes'][$size]['file'] ;
+        $intFile = wp_basename($intFile);
+        $intFile = $customDir['intermediate_full'] .'/'. $intFile;
 
-        // put_jpeg_header_data( $int, $int, $jpeg_header_data );
+        // Embed all metadata
+        // CORUPTING FILE DOESN"T FUCNKING WORK HAHA
+        // put_jpeg_header_data( $intFile, $intFile, $jpeg_header_data );
     }
-    return $data; 
-}; 
-         
-// add the filter 
-// add_filter( 'wp_generate_attachment_metadata', 'filter_wp_generate_attachment_metadata', 10, 2 ); 
-add_filter( 'wp_update_attachment_metadata', 'filter_wp_update_attachment_metadata', 10, 2 ); 
+
+    return $metadata;
+}
+
 
 
 
