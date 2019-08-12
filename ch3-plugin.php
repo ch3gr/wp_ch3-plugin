@@ -13,6 +13,26 @@ Author URI: http://ch3.gr
 */
 
 
+
+
+
+/***************************************************************
+ * CONTENT
+ ***************************************************************/
+
+//  Functions
+//  Plugin Menu for testing
+//  CUSTOM UPLOAD location
+//  METADATA (WIP)
+//  Bulk Action to update images (WIP)
+//  RATING
+//  GALLERY UPGRADE
+
+
+
+
+
+
 // include 'vars.php';
 //ini_set('max_execution_time', 60*60*10);
 
@@ -126,6 +146,8 @@ function print_ar( $ar ){
 
 
 
+
+
 /***************************************************************
  * Plugin Menu for testing -- REMOVE when done
  ***************************************************************/
@@ -139,7 +161,7 @@ function ch3_plugin(){
 	echo "<br> <br> <br>--------------<br>";
 	echo "Start<br>";
 
-	printLog('Hello');
+	// printLog('Hello');
 
     // include "PHP_JPEG_Metadata_Toolkit_1.12/IPTC.php"; 
 
@@ -335,12 +357,43 @@ foreach($files as $file) {
 
 echo "<br>----<<<>>>---<br>";
 
-
+$id = 880;
 // print("<pre>".print_r(  wp_get_attachment_image_src( 316 'full', false ) ,true)."</pre>");
-print("<pre>".print_r(  wp_get_attachment_image_src( 856, 'full', false ) ,true)."</pre>");
-print("<pre>".print_r(  wp_get_attachment_image_src( 856 ) ,true)."</pre>");
+print("<pre>".print_r(  wp_get_attachment_image_src( $id, 'full', false ) ,true)."</pre>");
+print("<pre>".print_r(  wp_get_attachment_image_src( $id ) ,true)."</pre>");
 // echo basename( 'D:/myStuff/ch3/web/v2.ch3.gr/file/image/ch3_0111_george2.jpg' );
 
+// $file = wp_get_attachment_image_src( 860, 'full', false );
+$file = get_attached_file( $id );
+echo $file;
+
+//basename ( get_attached_file( 860 ) );
+// print( basename ( get_attached_file( 860 ) ));
+
+
+$metadata = getMetadata($file);
+print_ar($metadata);
+
+    echo wp_get_attachment_thumb_file($id) .'  <-----------  <br>';
+
+$jpeg_header_data = get_jpeg_header_data( $file );
+$Exif_array = get_EXIF_JPEG( $file );
+$XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
+
+foreach( get_intermediate_image_sizes() as $size ){
+    $int = wp_get_attachment_image_src( $id, $size, false )[0] ;
+    $int = wp_basename( $int );
+    $int = wp_upload_dir()['path'] . '/img/int/' . $int;
+    $int = wp_normalize_path( $int );
+    echo $int .'<br>';
+
+    put_jpeg_header_data( $int, $int, $jpeg_header_data );
+}
+// $in = "D:/myStuff/ch3/web/v4.ch3.gr/file/img/int/ch3_190101_3403_300x169.jpg";
+// put_jpeg_header_data( $in, $in, $jpeg_header_data );
+
+// echo get_home_path();
+// print_ar( wp_upload_dir() ) ;
 
 
 echo "<br>--------------<br>";
@@ -444,23 +497,23 @@ print("<pre>".print_r($data,true)."</pre>");
 
 
 
-/***************************************************************
- * Test
- ***************************************************************/
-add_action('wp_handle_upload_prefilter', 'imageSave');
-
-function imageSave($file){
-	
-	// printLog($file['name']);
-	// print_r($file);
-	// $a = get_object_vars($file);
-	foreach($file as $key => $value)
-		printLog($key .' : '. $value);
 
 
-    // $file['name'] = 'wordpress-is-awesome-' . $file['name'];
-    return $file;
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -484,7 +537,6 @@ function select_wp_image_editors( $editors ) {
 
 
 
-
 /***************************************************************
  * CUSTOM UPLOAD location
  ***************************************************************/
@@ -492,7 +544,9 @@ function select_wp_image_editors( $editors ) {
 // General upload directory
 define('UPLOADS', 'file');
 
-
+//  http://v4.ch3.gr/file/media.*
+//  http://v4.ch3.gr/file/img/ch3_145-33.jpg
+//  http://v4.ch3.gr/file/img/int/ch3_145-33_150x150.jpg
 
 // Store cached/derivative images to custom directory :: file/img/cached
 // Include the existing classes first in order to extend them.
@@ -531,7 +585,7 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
         // $dir = trailingslashit($dir)."{$prefix}/{$name}.{$new_ext}";
         //.jpg and .jpeg, .png and .gif
         // if( $new_ext == 'jpg' || $new_ext == 'jpeg' || $new_ext == 'png' || $new_ext == 'gif' )
-        $dir = trailingslashit($dir)."cache/{$name}_{$prefix}.{$new_ext}";
+        $dir = trailingslashit($dir)."int/{$name}_{$prefix}.{$new_ext}";
         return $dir;
     }
 
@@ -539,13 +593,11 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
     function multi_resize($sizes) {
         $sizes = parent::multi_resize($sizes);
         foreach($sizes as $slug => $data)
-            $sizes[$slug]['file'] = "cache/".$data['file'];
+            $sizes[$slug]['file'] = "int/".$data['file'];
 
         return $sizes;
     }
 }
-
-
 
 
 
@@ -582,38 +634,117 @@ function image_dir( $param ){
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP  WIP 
 /***************************************************************
- * ITPC Automatically populate image attachment metadata
+ * METADATA
  ***************************************************************/
-function aqq_populate_img_meta($post_id) {
-    // get image info
-    getimagesize(get_attached_file($post_id), $info);
-    // print( isset($info['APP13']) );
-    // parse it for iptc
-    if(isset($info['APP13']))
-    {
-        $iptc = iptcparse($info['APP13']);
-        // var_dump($iptc);
-        // print("<pre>".print_r($iptc,true)."</pre>");
+add_filter('add_attachment', 'populate_img_metadata');
 
-        $title = $iptc['2#005'][0];
 
-        if( !empty( $title ) )
-            wp_update_post(array('ID' => $post_id, 'post_title' => $title));
-        // wp_update_post(array('ID' => $post_id, 'post_excerpt' => $caption));
-        // update_post_meta($post_id, '_wp_attachment_image_alt', $alt);
-        // wp_update_post(array('ID' => $post_id, 'post_content' => $description));
+function populate_img_metadata($img_id) {
+    
+    // get local file
+    $file = get_attached_file( $img_id );
+    $metadata = getMetadata($file);
 
-    // echo $$exif_excerpt;
-    // echo '<________>';
-    // echo $title;
-    // echo '<________>';
-    // print("<pre>".print_r($exif,true)."</pre>");
+    $updatedPost = array();
+    $alt = '';
+
+    $updatedPost['ID'] = $img_id;
+
+    if( $metadata['title'] != '' ){
+        $updatedPost['post_title'] = $metadata['title'];
+        $alt .= $metadata['title'] .' ';
     }
+    if( $metadata['caption'] != '' ) {
+        $updatedPost['post_excerpt'] = $metadata['caption'];
+        $alt .= $metadata['caption'] .' ';
+    }
+
+    if( $metadata['location'] != '' )
+        $alt .= $metadata['location'] .' ';
+    if( $metadata['city'] != '' )
+        $alt .= $metadata['city'] .' ';
+    if( $metadata['state'] != '' )
+        $alt .= $metadata['state'] .' ';
+    if( $metadata['country'] != '' )
+        $alt .= $metadata['country'] .' ';
+
+    if(count($metadata['keywords']) != 0) {
+        foreach ($metadata['keywords'] as $value)
+            $alt .= $value .' ';
+    }
+
+
+    wp_update_post( $updatedPost );
+    update_post_meta( $img_id, '_wp_attachment_image_alt', $alt );
+
+
+
+
 }
  
-// add_filter('add_attachment', 'aqq_populate_img_meta');
+
+// function filter_wp_generate_attachment_metadata( $metadata, $img_id ) { 
+function filter_wp_update_attachment_metadata( $data, $img_id ) { 
+    // make filter magic happen here... 
+
+    // Restore Metadata on all intermediate files
+    $file = wp_normalize_path(get_attached_file( $img_id ));
+    echo $file .'<----------<br>';
+
+    print_ar( scandir('D:/myStuff/ch3/web/v4.ch3.gr/file/img/int'));
+
+    $jpeg_header_data = get_jpeg_header_data( $file );
+    // $Exif_array = get_EXIF_JPEG( $file );
+    // $XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
+    foreach( get_intermediate_image_sizes() as $size ){
+        $int = wp_get_attachment_image_src( $img_id, $size, false )[0] ;
+        print_ar( wp_get_attachment_image_src( $img_id, $size, false ) );
+        // echo $int .'<br>';
+
+        // $int = wp_basename( $int );
+        // $int = wp_upload_dir()['path'] . '/img/int/' . $int;
+        // $int = wp_normalize_path( $int );
+
+        // put_jpeg_header_data( $int, $int, $jpeg_header_data );
+    }
+    return $data; 
+}; 
+         
+// add the filter 
+// add_filter( 'wp_generate_attachment_metadata', 'filter_wp_generate_attachment_metadata', 10, 2 ); 
+add_filter( 'wp_update_attachment_metadata', 'filter_wp_update_attachment_metadata', 10, 2 ); 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -658,6 +789,12 @@ function my_bulk_action_admin_notice() {
   }
 }
 add_action( 'admin_notices', 'my_bulk_action_admin_notice' );
+
+
+
+
+
+
 
 
 
@@ -820,7 +957,7 @@ function quick_edit_rating_save( $post_id ) {
 
 
 /***************************************************************/
-// Populate initial value - javeScript
+// Populate initial value - javaScript
 add_action( 'admin_footer', 'quick_edit_rating_javascript' );
  /**
  * Write javascript function to set rating number
@@ -894,10 +1031,19 @@ function expand_quick_edit_link( $actions, $post ) {
 
 
 
+
+
+
+
+
+
+
+
+
+
 /***************************************************************
  * GALLERY UPGRADE
  ***************************************************************/
-
 
 
 /***************************************************************
