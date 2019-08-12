@@ -81,8 +81,12 @@ function getDirContents($dir, &$results = array()){
 
 
 
-
-
+/***************************************************************
+ * Lazy function to print array
+ ***************************************************************/
+function print_ar( $ar ){
+    print("<pre>".print_r( $ar ,true)."</pre>");
+}
 
 
 
@@ -191,7 +195,7 @@ $file = "D:/myStuff/ch3/web/v4.ch3.gr/file/itcp_bs/ch3_190516_0002.jpg";
 // print("<pre>".print_r($exif,true)."</pre>");
 
 unset($info);
-$size = getimagesize($file, $info);
+// $size = getimagesize($file, $info);
 // print("<pre>".print_r($info,true)."</pre>");
 
 echo "<br>------RAW--------<br>";
@@ -213,8 +217,16 @@ print("<pre>".print_r($iptc,true)."</pre>");
 // }
 
 
+//  thumbnail
+//  medium
+//  medium_large
+//  large
+//  post-thumbnail
+
 
 echo "<br>--------------<br>";
+
+print("<pre>".print_r( get_intermediate_image_sizes() ,true)."</pre>");
 echo "<br>----      ----<br>";
 echo "<br>--------------<br>";
 
@@ -287,7 +299,7 @@ echo "<br>------oooo-----<br>";
 
 
 
-if(1)
+if(0)
 foreach($files as $file) {
 
     // print( end(explode(".", $file)) . "______");
@@ -322,6 +334,13 @@ foreach($files as $file) {
         // echo "$keyword, ";
 
 echo "<br>----<<<>>>---<br>";
+
+
+// print("<pre>".print_r(  wp_get_attachment_image_src( 316 'full', false ) ,true)."</pre>");
+print("<pre>".print_r(  wp_get_attachment_image_src( 856, 'full', false ) ,true)."</pre>");
+print("<pre>".print_r(  wp_get_attachment_image_src( 856 ) ,true)."</pre>");
+// echo basename( 'D:/myStuff/ch3/web/v2.ch3.gr/file/image/ch3_0111_george2.jpg' );
+
 
 
 echo "<br>--------------<br>";
@@ -447,9 +466,39 @@ function imageSave($file){
 
 
 
+
+
+
+
+
+
+/***************************************************************
+ * Choose Image engine
+ ***************************************************************/
+add_filter( 'wp_image_editors', 'select_wp_image_editors' );
+ 
+function select_wp_image_editors( $editors ) {
+    return array( 'WP_Image_Editor_GD', 'WP_Image_Editor_Imagick' );        // Default 
+    // return array( 'WP_Image_Editor_Imagick', 'WP_Image_Editor_GD' );
+}
+
+
+
+
 /***************************************************************
  * CUSTOM UPLOAD location
  ***************************************************************/
+
+// General upload directory
+define('UPLOADS', 'file');
+
+
+
+// Store cached/derivative images to custom directory :: file/img/cached
+// Include the existing classes first in order to extend them.
+require_once ABSPATH.WPINC."/class-wp-image-editor.php";
+require_once ABSPATH.WPINC."/class-wp-image-editor-gd.php";
+
 add_filter("wp_image_editors", "my_wp_image_editors");
 function my_wp_image_editors($editors) {
     array_unshift($editors, "WP_Image_Editor_Custom");
@@ -457,12 +506,6 @@ function my_wp_image_editors($editors) {
     return $editors;
 }
 
-
-// Store images to custom directory
-// Include the existing classes first in order to extend them.
-require_once ABSPATH.WPINC."/class-wp-image-editor.php";
-require_once ABSPATH.WPINC."/class-wp-image-editor-gd.php";
-define('UPLOADS', 'file');
 
 class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
     public function generate_filename($prefix = NULL, $dest_path = NULL, $extension = NULL) {
@@ -480,28 +523,58 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
 
         // Allow extension to be changed via method argument.
         $new_ext = strtolower($extension ? $extension : $ext);
-
+        
         // Default to $_dest_path if method argument is not set or invalid.
         if(!is_null($dest_path) && $_dest_path = realpath($dest_path))
             $dir = $_dest_path;
 
         // $dir = trailingslashit($dir)."{$prefix}/{$name}.{$new_ext}";
-        $dir = trailingslashit($dir)."img/{$name}_{$prefix}.{$new_ext}";
+        //.jpg and .jpeg, .png and .gif
+        // if( $new_ext == 'jpg' || $new_ext == 'jpeg' || $new_ext == 'png' || $new_ext == 'gif' )
+        $dir = trailingslashit($dir)."cache/{$name}_{$prefix}.{$new_ext}";
         return $dir;
     }
 
+    //  Provide the same path when doing the multi resize
     function multi_resize($sizes) {
-    $sizes = parent::multi_resize($sizes);
+        $sizes = parent::multi_resize($sizes);
+        foreach($sizes as $slug => $data)
+            $sizes[$slug]['file'] = "cache/".$data['file'];
 
-    foreach($sizes as $slug => $data)
-        // $sizes[$slug]['file'] = $data['width']."x".$data['height']."/".$data['file'];
-        $sizes[$slug]['file'] = "img/".$data['file'];
-
-    return $sizes;
-}
+        return $sizes;
+    }
 }
 
 
+
+
+
+
+
+// Checks if the uploaded file is of type image and adds a filter to change the upload directory
+add_filter('wp_handle_upload_prefilter', 'custom_upload_filter' );
+
+function custom_upload_filter( $file ){
+    // print_ar( $file );
+
+    if (strpos( $file['type'], 'image') !== false) {
+        add_filter('upload_dir', 'image_dir');
+    }
+    return $file;
+}
+
+
+// Filter is only added for images when custom_upload_filter is also called. Trick that works
+function image_dir( $param ){
+    $mydir = '/img';
+
+    $param['path'] = $param['path'] . $mydir;
+    $param['url'] = $param['url'] . $mydir;
+
+    remove_filter('upload_dir', 'image_dir');
+
+    return $param;
+}
 
 
 

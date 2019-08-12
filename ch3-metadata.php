@@ -209,6 +209,7 @@ function getMetadata($filename){
     }
 
 
+
     unset($info);
     $size = getimagesize($filename, $info);
     $iptc = iptcparse($info['APP13']);
