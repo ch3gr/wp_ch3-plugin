@@ -184,15 +184,31 @@ function get_tag_values(array &$metadata, $tag, $keyname, $dataname){
 //  Config in case of future fuck up
 function getMetadata($filename){
     $metadata = array();
+    $metadata['date'] = '';
+    $metadata['title'] = '';
+    $metadata['caption'] = '';
+    $metadata['location'] = '';
+    $metadata['city'] = '';
+    $metadata['state'] = '';
+    $metadata['country'] = '';
+    $metadata['keywords'] = array();
+    
+    
+
 
     $jpeg_header_data = get_jpeg_header_data( $filename );
-    
+    // EXIF
     $Exif_array = get_EXIF_JPEG( $filename );
-    $metadata['date'] = get_tag_value( $Exif_array, 'Date and Time of Original', 'Tag Name', 'Text Value');
 
-    $XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
-    if( is_null($XMP_array) != ''  ){
-        $metadata['title'] = get_tag_value( $XMP_array, 'photoshop:Headline', 'tag', 'value');
+    if( !is_null($Exif_array) && is_array($Exif_array) )
+        $metadata['date'] = get_tag_value( $Exif_array, 'Date and Time of Original', 'Tag Name', 'Text Value');
+
+    // XMP
+    $XMP_text = get_XMP_text( $jpeg_header_data );
+    $XMP_array = read_XMP_array_from_text( $XMP_text );
+
+    if( !is_null($XMP_array) && is_array($XMP_array) ){
+        $metadata['title'] = get_tag_value( $XMP_array, 'dc:title', 'tag', 'value');
         $metadata['caption'] = get_tag_value( $XMP_array, 'dc:description', 'tag', 'value');
 
         // $metadata['product'] = get_tag_value( $XMP_array, 'dc:title', 'tag', 'value');
@@ -228,10 +244,8 @@ function getMetadata($filename){
     if( $metadata['country'] == '' )
         $metadata['country'] = $iptc['2#101'][0];
 
-    if( isset($metadata['keywords']) && !count($metadata['keywords']) )
+    if( !count($metadata['keywords']) )
         $metadata['keywords'] = $iptc['2#025'];
-    else 
-        $metadata['keywords'] = array();
 
 
     return $metadata;

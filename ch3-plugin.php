@@ -29,20 +29,19 @@ Author URI: http://ch3.gr
 //  GALLERY UPGRADE
 
 
+
 // General upload directory
-define('UPLOADS', 'file');
+// define('UPLOADS', 'file');
 
 $customDir = array();
 
 $customDir['uploads'] = 'file';
-$customDir['images'] = 'img';
-$customDir['intermediate'] = 'int';
+$customDir['intermediate'] = 'img';
 
 define('UPLOADS', $customDir['uploads']);
 
 $customDir['uploads_full'] = wp_normalize_path( wp_upload_dir()['path'] ) ;
-$customDir['images_full'] = $customDir['uploads_full'] . '/' . $customDir['images'];
-$customDir['intermediate_full'] = $customDir['images_full'] .'/' .$customDir['intermediate'];
+$customDir['intermediate_full'] = $customDir['uploads_full'] .'/' .$customDir['intermediate'];
 
 
 
@@ -164,7 +163,7 @@ function print_ar( $ar ){
 /***************************************************************
  * Plugin Menu for testing -- REMOVE when done
  ***************************************************************/
-add_action('admin_menu', 'ch3_plugin_menu');
+add_action('admin_menu', 'ch3_plugin_menu', 1);
 
 function ch3_plugin_menu(){
     add_menu_page( 'ch3 Plugin', 'ch3 Plugin', 'manage_options', 'ch3-plugin', 'ch3_plugin' );
@@ -180,9 +179,64 @@ function ch3_plugin(){
 
     global $customDir;
     print('<br>--------------<br>');
-    print_ar( wp_upload_dir() );
+    // print_ar( wp_upload_dir() );
     print('<br>--------------<br>');
-    print_ar($customDir);
+    // print_ar($customDir);
+
+
+
+echo "<br>----- Edit DB ---------<br>";    
+global $wpdb;
+$result = $wpdb->get_results('SELECT guid FROM wp_posts WHERE ID = 1299');
+print_ar( $result[0] );
+
+echo "<br>----- CHECK MIGRATION ---------<br>";    
+
+echo wp_upload_dir()['url'] .'<br>';
+
+$id_working = 1069;
+$id_broken = 1068;
+
+foreach( get_intermediate_image_sizes() as $size ){
+    $int = wp_get_attachment_image_src( $id_working, $size, false )[0] ;
+    // $int = wp_basename( $int );
+    // $int = wp_upload_dir()['path'] . '/img/int/' . $int;
+    // $int = wp_normalize_path( $int );
+    echo $int .'<br>';
+}
+
+echo "<br>----- file ---------<br>";    
+echo get_attached_file( 1137 );
+echo "<br>";    
+echo get_attached_file( 1150 );
+
+// print_ar( wp_get_attachment_metadata($id_working) );
+// print_ar( wp_get_attachment_metadata($id_broken) );
+
+
+echo "<br>----- TRANSFER METADA ---------<br>";    
+
+// $orig = "D:/myStuff/ch3/web/v4.ch3.gr/__tmp/test/copyMeta/ori.jpg";
+// $int = "D:/myStuff/ch3/web/v4.ch3.gr/__tmp/test/copyMeta/2.jpg";
+// $new = "D:/myStuff/ch3/web/v4.ch3.gr/__tmp/test/copyMeta/new.jpg";
+// $orig_data = get_jpeg_header_data( $orig );
+// $int_data = get_jpeg_header_data( $int );
+
+// $Exif_array = get_EXIF_JPEG( $orig );
+// $XMP_array = read_XMP_array_from_text( get_XMP_text( $orig_data ) );
+
+// $orig_XMP_text = get_XMP_text( $orig_data );
+// $new_int_data = put_XMP_text($int_data, $orig_XMP_text);
+
+// put_jpeg_header_data( $int, $int, $new_int_data );
+
+// $new_int_data = put_EXIF_JPEG($Exif_array, $int_data);
+
+// print_ar( $new_int_data );
+
+// put_jpeg_header_data( $int, $int, $int_data );
+
+// print_ar( $jpeg_header_data);
 
 
 echo "<br>--------------<br>";    
@@ -246,7 +300,7 @@ echo "<br>------RAW--------<br>";
 
 
 $iptc = iptcparse($info['APP14']);
-print("<pre>".print_r($iptc,true)."</pre>");
+// print("<pre>".print_r($iptc,true)."</pre>");
 
 
 // if(isset($info['APP13']))
@@ -267,7 +321,7 @@ print("<pre>".print_r($iptc,true)."</pre>");
 
 echo "<br>--------------<br>";
 
-print("<pre>".print_r( get_intermediate_image_sizes() ,true)."</pre>");
+// print("<pre>".print_r( get_intermediate_image_sizes() ,true)."</pre>");
 echo "<br>----      ----<br>";
 echo "<br>--------------<br>";
 
@@ -378,36 +432,36 @@ echo "<br>----<<<>>>---<br>";
 
 $id = 880;
 // print("<pre>".print_r(  wp_get_attachment_image_src( 316 'full', false ) ,true)."</pre>");
-print("<pre>".print_r(  wp_get_attachment_image_src( $id, 'full', false ) ,true)."</pre>");
-print("<pre>".print_r(  wp_get_attachment_image_src( $id ) ,true)."</pre>");
+// print("<pre>".print_r(  wp_get_attachment_image_src( $id, 'full', false ) ,true)."</pre>");
+// print("<pre>".print_r(  wp_get_attachment_image_src( $id ) ,true)."</pre>");
 // echo basename( 'D:/myStuff/ch3/web/v2.ch3.gr/file/image/ch3_0111_george2.jpg' );
 
 // $file = wp_get_attachment_image_src( 860, 'full', false );
-$file = get_attached_file( $id );
-echo $file;
+// $file = get_attached_file( $id );
+// echo $file;
 
 //basename ( get_attached_file( 860 ) );
 // print( basename ( get_attached_file( 860 ) ));
 
 
-$metadata = getMetadata($file);
-print_ar($metadata);
+// $metadata = getMetadata($file);
+// print_ar($metadata);
 
-    echo wp_get_attachment_thumb_file($id) .'  <-----------  <br>';
+//     echo wp_get_attachment_thumb_file($id) .'  <-----------  <br>';
 
-$jpeg_header_data = get_jpeg_header_data( $file );
-$Exif_array = get_EXIF_JPEG( $file );
-$XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
+// $jpeg_header_data = get_jpeg_header_data( $file );
+// $Exif_array = get_EXIF_JPEG( $file );
+// $XMP_array = read_XMP_array_from_text( get_XMP_text( $jpeg_header_data ) );
 
-foreach( get_intermediate_image_sizes() as $size ){
-    $int = wp_get_attachment_image_src( $id, $size, false )[0] ;
-    $int = wp_basename( $int );
-    $int = wp_upload_dir()['path'] . '/img/int/' . $int;
-    $int = wp_normalize_path( $int );
-    echo $int .'<br>';
+// foreach( get_intermediate_image_sizes() as $size ){
+//     $int = wp_get_attachment_image_src( $id, $size, false )[0] ;
+//     $int = wp_basename( $int );
+//     $int = wp_upload_dir()['path'] . '/img/int/' . $int;
+//     $int = wp_normalize_path( $int );
+//     echo $int .'<br>';
 
-    put_jpeg_header_data( $int, $int, $jpeg_header_data );
-}
+//     put_jpeg_header_data( $int, $int, $jpeg_header_data );
+// }
 // $in = "D:/myStuff/ch3/web/v4.ch3.gr/file/img/int/ch3_190101_3403_300x169.jpg";
 // put_jpeg_header_data( $in, $in, $jpeg_header_data );
 
@@ -608,7 +662,6 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
         $dir = trailingslashit($dir). $customDir['intermediate'] . "/{$name}_{$prefix}.{$new_ext}";
         return $dir;
     }
-
     //  Provide the same path when doing the multi resize
     function multi_resize($sizes) {
         global $customDir;
@@ -625,10 +678,11 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
 
 
 // Checks if the uploaded file is of type image and adds a filter to change the upload directory
-add_filter('wp_handle_upload_prefilter', 'custom_upload_filter' );
 
+// add_filter('wp_handle_upload_prefilter', 'custom_upload_filter' );
 function custom_upload_filter( $file ){
     // print_ar( $file );
+// echo "XXXXXXXXXXXXXXXXXXX";
 
     if (strpos( $file['type'], 'image') !== false) {
         add_filter('upload_dir', 'image_dir');
@@ -683,8 +737,23 @@ add_filter('add_attachment', 'populate_img_metadata');
 function populate_img_metadata($img_id) {
     
     // get local file
-    $file = get_attached_file( $img_id );
+    $file = wp_normalize_path( get_attached_file( $img_id ) );
+    
+
+
+    // global $wpdb;
+    // $result = $wpdb->get_results('SELECT guid FROM wp_posts WHERE ID = '.$img_id);
+    // print_ar( $result[0] );
+
+    // echo '  <<<<    <br>';
+    // echo $file .'<br>';
+    // $file = str_replace("/file/","/file/img/", $file);
+    // echo $file;
+
     $metadata = getMetadata($file);
+
+    // echo '  <<<<    <br>';
+
 
     $updatedPost = array();
     $alt = '';
@@ -709,7 +778,7 @@ function populate_img_metadata($img_id) {
     if( $metadata['country'] != '' )
         $alt .= $metadata['country'] .' ';
 
-    if(count($metadata['keywords']) != 0) {
+    if(is_array($metadata['keywords']) && count($metadata['keywords']) != 0) {
         foreach ($metadata['keywords'] as $value)
             $alt .= $value .' ';
     }
@@ -736,19 +805,26 @@ function filter_wp_generate_attachment_metadata( $metadata, $img_id ) {
     global $customDir;
 
     // Get metadata - function from PJMT
-    $jpeg_header_data = get_jpeg_header_data( $file );
-    foreach( get_intermediate_image_sizes() as $size ){
+    // Only XMP for the time, hopefully no need to add Exif
+    $orig_data = get_jpeg_header_data( $file );
+    $orig_XMP_text = get_XMP_text( $orig_data );
 
+        foreach( get_intermediate_image_sizes() as $size ){
         // constract the file name of the intermediate file on dist
         $intFile = $metadata['sizes'][$size]['file'] ;
         $intFile = wp_basename($intFile);
         $intFile = $customDir['intermediate_full'] .'/'. $intFile;
 
-        // Embed all metadata
-        // CORUPTING FILE DOESN"T FUCNKING WORK HAHA
-        // put_jpeg_header_data( $intFile, $intFile, $jpeg_header_data );
-    }
+        // Check if the file exist, which is the case for images which don't generate all sizes
+        if( is_file($intFile) ) {
+            // Get the metadata of the intermediate file and add the XMP from the original
+            $int_data = get_jpeg_header_data( $intFile );
+            $new_int_data = put_XMP_text($int_data, $orig_XMP_text);
 
+            // Embed metadata
+            put_jpeg_header_data( $intFile, $intFile, $new_int_data );
+        }
+    }
     return $metadata;
 }
 
