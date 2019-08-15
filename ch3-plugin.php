@@ -128,6 +128,21 @@ function print_ar( $ar ){
 
 
 
+/***************************************************************
+ * Partial match within an array and return index
+ ***************************************************************/
+function array_search_partial(& $arr, $keyword) {
+    foreach($arr as $index => $string) {
+        if (strpos($string, $keyword) !== FALSE)
+            return $index;
+    }
+    return -1;
+}
+
+
+
+
+
 
 
 
@@ -185,33 +200,78 @@ function ch3_plugin(){
 
 
 
+echo "<br>----- Strings ---------<br>";    
+
+$text = 'This is HTML <a href="www.tate.org.uk/modern/" rel="noopener" target="_blank">Tate Modern</a> lala';
+// $text = $html = 'This is html <strong>I am not strong</strong> yep';
+// echo $text;
+// echo '<br>';
+// echo wp_strip_all_tags( $text );
+
 echo "<br>----- Edit DB ---------<br>";    
-global $wpdb;
-$result = $wpdb->get_results('SELECT guid FROM wp_posts WHERE ID = 1299');
-print_ar( $result[0] );
+// global $wpdb;
+// $result = $wpdb->get_results('SELECT guid FROM wp_posts WHERE ID = 1299');
+// print_ar( $result[0] );
 
 echo "<br>----- CHECK MIGRATION ---------<br>";    
 
-echo wp_upload_dir()['url'] .'<br>';
+// echo wp_upload_dir()['url'] .'<br>';
 
-$id_working = 1069;
-$id_broken = 1068;
+// $id_working = 1069;
+// $id_broken = 1068;
 
-foreach( get_intermediate_image_sizes() as $size ){
-    $int = wp_get_attachment_image_src( $id_working, $size, false )[0] ;
-    // $int = wp_basename( $int );
-    // $int = wp_upload_dir()['path'] . '/img/int/' . $int;
-    // $int = wp_normalize_path( $int );
-    echo $int .'<br>';
-}
+// foreach( get_intermediate_image_sizes() as $size ){
+//     $int = wp_get_attachment_image_src( $id_working, $size, false )[0] ;
+//     // $int = wp_basename( $int );
+//     // $int = wp_upload_dir()['path'] . '/img/int/' . $int;
+//     // $int = wp_normalize_path( $int );
+//     echo $int .'<br>';
+// }
 
 echo "<br>----- file ---------<br>";    
-echo get_attached_file( 1137 );
-echo "<br>";    
-echo get_attached_file( 1150 );
+// echo get_attached_file( 1137 );
+// echo "<br>";    
+// echo get_attached_file( 1150 );
 
 // print_ar( wp_get_attachment_metadata($id_working) );
 // print_ar( wp_get_attachment_metadata($id_broken) );
+
+
+echo "<br>----- glob for entire archive, quick reference ---------<br>";    
+$time_pre = microtime(true);
+
+$glob = glob("D:/myStuff/My Pictures/digi/*/*/*");
+$glob = array_merge($glob, glob("D:/myStuff/My Pictures/film/*/*") );
+$glob = array_merge($glob, glob("D:/myStuff/My Pictures/cg/*") );
+
+// print_ar( $glob );
+$time_post = microtime(true);
+$diff = $time_post - $time_pre;
+print( 'time : '. $diff .'<br>');
+$time_pre = microtime(true);
+
+$id = array_search_partial( $glob, 'ch3_1412_kunal___.jpg');
+print( 'ID: '. $id .' file:: ' .$glob[$id] .'<br>');
+
+$time_post = microtime(true);
+$diff = $time_post - $time_pre;
+print( 'time : '. $diff .'<br>');
+
+
+
+echo "<br>----- METADA ---------<br>";    
+
+//$file = "D:/myStuff/ch3/web/v4.ch3.gr/__tmp/test/metadata_bs/ch3_064-23.jpg";
+$file = "D:/myStuff/ch3/web/v4.ch3.gr/file/ch3_180511_195823.jpg";
+
+$data = get_jpeg_header_data( $file );
+
+$Exif_array = get_EXIF_JPEG( $file );
+$XMP_array = read_XMP_array_from_text( get_XMP_text( $data ) );
+
+print_ar( $XMP_array );
+
+
 
 
 echo "<br>----- TRANSFER METADA ---------<br>";    
@@ -677,13 +737,13 @@ class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
 
 
 
-// Checks if the uploaded file is of type image and adds a filter to change the upload directory
 
+// NOT USED ANY MORE. FUCK THAT SHIT!!!
+
+// Checks if the uploaded file is of type image and adds a filter to change the upload directory
 // add_filter('wp_handle_upload_prefilter', 'custom_upload_filter' );
 function custom_upload_filter( $file ){
     // print_ar( $file );
-// echo "XXXXXXXXXXXXXXXXXXX";
-
     if (strpos( $file['type'], 'image') !== false) {
         add_filter('upload_dir', 'image_dir');
     }
@@ -738,21 +798,7 @@ function populate_img_metadata($img_id) {
     
     // get local file
     $file = wp_normalize_path( get_attached_file( $img_id ) );
-    
-
-
-    // global $wpdb;
-    // $result = $wpdb->get_results('SELECT guid FROM wp_posts WHERE ID = '.$img_id);
-    // print_ar( $result[0] );
-
-    // echo '  <<<<    <br>';
-    // echo $file .'<br>';
-    // $file = str_replace("/file/","/file/img/", $file);
-    // echo $file;
-
     $metadata = getMetadata($file);
-
-    // echo '  <<<<    <br>';
 
 
     $updatedPost = array();
@@ -762,26 +808,42 @@ function populate_img_metadata($img_id) {
 
     if( $metadata['title'] != '' ){
         $updatedPost['post_title'] = $metadata['title'];
+        $updatedPost['post_name'] = $metadata['title'];
+        
         $alt .= $metadata['title'] .' ';
     }
-    if( $metadata['caption'] != '' ) {
-        $updatedPost['post_excerpt'] = $metadata['caption'];
-        $alt .= $metadata['caption'] .' ';
+    $caption = $metadata['caption'];
+    if( $caption != '' ) {
+        // if(0){
+        if( (strpos($caption,'<a')!== false || strpos($caption,'< a')!== false ) && strpos($caption,'>')!== false)
+                $caption = str_replace('">','" rel="noopener" target="_blank">', $caption);
+
+        $updatedPost['post_excerpt'] = '';              // Caption
+        $updatedPost['post_content'] = $caption;        // Description
+
+        $alt .=  wp_strip_all_tags($caption)  .' ';
+
     }
 
-    if( $metadata['location'] != '' )
-        $alt .= $metadata['location'] .' ';
-    if( $metadata['city'] != '' )
-        $alt .= $metadata['city'] .' ';
-    if( $metadata['state'] != '' )
-        $alt .= $metadata['state'] .' ';
-    if( $metadata['country'] != '' )
-        $alt .= $metadata['country'] .' ';
-
+    //  Populate the Alternative Text. Not the best content, but better than nothing.
     if(is_array($metadata['keywords']) && count($metadata['keywords']) != 0) {
+        $alt .= '- ';
         foreach ($metadata['keywords'] as $value)
             $alt .= $value .' ';
     }
+
+    if( $metadata['location']!='' || $metadata['city']!='' || $metadata['state']!='' || $metadata['country']!='') {
+        $alt .= '- ';
+        if( $metadata['location'] != '' )
+            $alt .= $metadata['location'] .' ';
+        if( $metadata['city'] != '' )
+            $alt .= $metadata['city'] .' ';
+        if( $metadata['state'] != '' )
+            $alt .= $metadata['state'] .' ';
+        if( $metadata['country'] != '' )
+            $alt .= $metadata['country'] .' ';
+    }
+
 
 
     wp_update_post( $updatedPost );
