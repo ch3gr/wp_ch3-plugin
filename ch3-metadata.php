@@ -209,6 +209,7 @@ function getMetadata($filename){
 
     if( !is_null($XMP_array) && is_array($XMP_array) ){
         $metadata['title'] = get_tag_value( $XMP_array, 'dc:title', 'tag', 'value');
+        $metadata['title'] = '';
         $metadata['caption'] = get_tag_value( $XMP_array, 'dc:description', 'tag', 'value');
 
         // $metadata['product'] = get_tag_value( $XMP_array, 'dc:title', 'tag', 'value');
@@ -231,8 +232,8 @@ function getMetadata($filename){
     $iptc = iptcparse($info['APP13']);
     // $metadata = array_merge($metadata, $iptc);
 
-    if( $metadata['title'] == '' )
-        $metadata['title'] = $iptc['2#005'][0];
+    // if( $metadata['title'] == '' )
+    //     $metadata['title'] = $iptc['2#005'][0];
 
     if( $metadata['caption'] == '' )
         $metadata['caption'] = $iptc['2#120'][0];

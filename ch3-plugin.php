@@ -168,7 +168,9 @@ function array_search_partial(& $arr, $keyword) {
 
 
 
+function getCategoryFromDB(){
 
+}
 
 
 
@@ -197,6 +199,11 @@ function ch3_plugin(){
     // print_ar( wp_upload_dir() );
     print('<br>--------------<br>');
     // print_ar($customDir);
+
+
+
+echo "<br>----- Category & tags ---------<br>";    
+
 
 
 
@@ -238,39 +245,46 @@ echo "<br>----- file ---------<br>";
 
 
 echo "<br>----- glob for entire archive, quick reference ---------<br>";    
-$time_pre = microtime(true);
+// $time_pre = microtime(true);
 
-$glob = glob("D:/myStuff/My Pictures/digi/*/*/*");
-$glob = array_merge($glob, glob("D:/myStuff/My Pictures/film/*/*") );
-$glob = array_merge($glob, glob("D:/myStuff/My Pictures/cg/*") );
+// $glob = glob("D:/myStuff/My Pictures/digi/*/*/*");
+// $glob = array_merge($glob, glob("D:/myStuff/My Pictures/film/*/*") );
+// $glob = array_merge($glob, glob("D:/myStuff/My Pictures/cg/*") );
 
-// print_ar( $glob );
-$time_post = microtime(true);
-$diff = $time_post - $time_pre;
-print( 'time : '. $diff .'<br>');
-$time_pre = microtime(true);
+// // print_ar( $glob );
+// $time_post = microtime(true);
+// $diff = $time_post - $time_pre;
+// print( 'time : '. $diff .'<br>');
+// $time_pre = microtime(true);
 
-$id = array_search_partial( $glob, 'ch3_1412_kunal___.jpg');
-print( 'ID: '. $id .' file:: ' .$glob[$id] .'<br>');
+// $id = array_search_partial( $glob, 'ch3_1412_kunal___.jpg');
+// print( 'ID: '. $id .' file:: ' .$glob[$id] .'<br>');
 
-$time_post = microtime(true);
-$diff = $time_post - $time_pre;
-print( 'time : '. $diff .'<br>');
+// $time_post = microtime(true);
+// $diff = $time_post - $time_pre;
+// print( 'time : '. $diff .'<br>');
 
+
+echo "<br>----- Post Exists ---------<br>";    
+
+// print_ar( post_exists('Distorted faces') );
 
 
 echo "<br>----- METADA ---------<br>";    
 
 //$file = "D:/myStuff/ch3/web/v4.ch3.gr/__tmp/test/metadata_bs/ch3_064-23.jpg";
-$file = "D:/myStuff/ch3/web/v4.ch3.gr/file/ch3_180511_195823.jpg";
+// $file = "D:/myStuff/ch3/web/v4.ch3.gr/file/ch3_180511_195823.jpg";
+// $file = "D:/myStuff/ch3/web/v4.ch3.gr/__tmp/test/metadata_bs/ch3_141110_6358.jpg";
 
-$data = get_jpeg_header_data( $file );
+// $data = get_jpeg_header_data( $file );
 
-$Exif_array = get_EXIF_JPEG( $file );
-$XMP_array = read_XMP_array_from_text( get_XMP_text( $data ) );
+// $Exif_array = get_EXIF_JPEG( $file );
+// $XMP_array = read_XMP_array_from_text( get_XMP_text( $data ) );
 
-print_ar( $XMP_array );
+// print_ar( $XMP_array );
 
+
+// print_ar( getMetadata($file) );
 
 
 
