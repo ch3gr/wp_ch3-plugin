@@ -202,8 +202,7 @@ function ch3_plugin(){
 
 
 
-echo "<br>----- Category & tags ---------<br>";    
-
+echo "<br>----- Image attachement ---------<br>";    
 
 
 
@@ -1099,7 +1098,7 @@ function quick_edit_rating( $column_name, $post_type ) {
 
     wp_nonce_field( plugin_basename( __FILE__ ), 'rating_nonce' );
     echo '<div class="inline-edit-group wp-clearfix">';
-    echo '<br>dsa <input type="number" min="-10" max="10" name="rating_value" class="ratingClass" value="1111">Rating ';
+    echo '<input type="number" min="-10" max="10" name="rating_value" class="ratingClass" value="1111">Rating ';
     echo '</div>';
 
 
@@ -1220,77 +1219,65 @@ function expand_quick_edit_link( $actions, $post ) {
 
 
 /***************************************************************
- * POST EDITOR - RATING Field box
+ * EDIT GALLERY - TYPE option
  ***************************************************************/
-add_action('print_media_templates', function(){
-?>
-<script type="text/html" id="tmpl-custom-gallery-setting">
-    <h3>Gallery Preset</h3>
 
-    <label class="setting">
-      <span><?php _e('Select'); ?></span>
-      <select data-setting="preset" id='selectPreset'>
-        <option value="images"> Image Gallery </option>
-        <option value="posts"> Post Collection </option>
-        <option value="custom"> Custom Options </option>
-      </select>
+// CHECK :: https://wordpress.stackexchange.com/questions/212708/allowing-for-multiple-template-views-on-the-gallery-settings-page-when-using-the
 
-    <h3 style="z-index: -1;">___________________________________________________________________________________________</h3>
+add_action('print_media_templates', function() {
 
+    // define your backbone template;
+    // the "tmpl-" prefix is required,
+    // and your input field should have a data-setting attribute
+    // matching the shortcode name
+    $gallery_types = apply_filters('print_media_templates_gallery_settings_types',
+                                   array(
+                                       'images'      => ' Images',
+                                       'posts'         => ' Posts',
+                                       'default_val' => ' Default'));
+    ?>
+    <script type="text/html" id="tmpl-custom-gallery-type-setting">
+        <label class="setting">
+            <hr><hr>
+            <span><?php _e('Layout Type'); ?></span>
+            <select data-setting="type"><?php
+                foreach($gallery_types as $key => $value) {
+                    echo "<option value=\"$key\">$value</option>";
+                }
+                ?>
+            </select>
+        </label>
+    </script>
 
-</script>
+    <script>
 
-<script>
+        jQuery(document).ready(function () {
 
-    $(function()
-    {
-        _.extend(wp.media.gallery.defaults, {
-        preset: 'images',
+            // add your shortcode attribute and its default value to the
+            // gallery settings list; $.extend should work as well...
+            _.extend(wp.media.gallery.defaults, {
+                type: 'default_val'
+            });
+
+            // join default gallery settings template with yours -- store in list
+            if (!wp.media.gallery.templates) wp.media.gallery.templates = ['gallery-settings'];
+            wp.media.gallery.templates.push('custom-gallery-type-setting');
+
+            // loop through list -- allowing for other templates/settings
+            wp.media.view.Settings.Gallery = wp.media.view.Settings.Gallery.extend({
+                template: function (view) {
+                    var output = '';
+                    for (var i in wp.media.gallery.templates) {
+                        output += wp.media.template(wp.media.gallery.templates[i])(view);
+                    }
+                    return output;
+                }
+            });
+
         });
 
-        wp.media.view.Settings.Gallery = wp.media.view.Settings.Gallery.extend({
-            template: function(view){
-              return wp.media.template('custom-gallery-setting')(view)
-                   + wp.media.template('gallery-settings')(view);
-            }
-        });
-        // $('#selectPreset option[value="images"]').attr("selected", "selected");
-        // $('.testField option[value="images"]');
-
-        // $('#selectPreset').on('change', function() {
-        //     alert("aaa");
-        //     if ($(this).val() == 'custom') {
-        //         $('.link-to').prop('disabled', false);
-        //     } else {
-        //         // $('#selectTesty').reset();
-        //         $('.link-to').prop('disabled', true);
-        //     }
-        // });
-    });
-
-
-
-    // $(function () {
-    //     $('#selectPreset').on('change', function() {
-    //         alert("aaa");
-    //         if ($(this).val() == 'custom') {
-    //             $('.link-to').prop('disabled', false);
-    //         } else {
-    //             // $('#selectTesty').reset();
-    //             $('.link-to').prop('disabled', true);
-    //         }
-    //     });
-
-    //     $('#selectPreset').val('images');
-    // });
-
-
-</script>
-
-
-
-<?php
-
+    </script>
+    <?php
 });
 
 
@@ -1301,9 +1288,7 @@ add_action('print_media_templates', function(){
 
 
 
-
-
-
+// GALLERY RENDERING
 
 add_filter( 'post_gallery', 'my_post_gallery', 10, 2 );
 function my_post_gallery( $output, $attr) {
@@ -1320,7 +1305,7 @@ function my_post_gallery( $output, $attr) {
     }
 
     extract(shortcode_atts(array(
-        'preset'     => '',
+        'type'     => '',
         'order'      => 'ASC',
         'orderby'    => 'menu_order ID',
         'id'         => $post->ID,
@@ -1339,13 +1324,12 @@ function my_post_gallery( $output, $attr) {
 
 
 
-
-    if( $preset == 'images' || $preset == ''){
+    if( $type == 'images' || $type == ''){
         //////////////////////////////////////////////////////////////////////////////////////////
         // Image Gallery
         //////////////////////////////////////////////////////////////////////////////////////////
 
-        $output .= "Image preset<br>";
+        $output .= "Image type<br>";
 
 
         $selector = "gallery-{$instance}";
@@ -1368,11 +1352,11 @@ function my_post_gallery( $output, $attr) {
             // $output .= '<div id=""'
             $output .= wp_get_attachment_image( $id, 'large', 0, '' );
             
-            // $output .=
+            // $output .= "bb";
         }
 
         $output .= '</div>';
-        $output .= '<br>END of gallery<br>__________<br>';
+        $output .= '<br>END of gallery | type:images<br>__________<br>';
         return $output;
 
     }
@@ -1382,12 +1366,12 @@ function my_post_gallery( $output, $attr) {
 
 
 
-    else if( $preset == 'posts'){
+    else if( $type == 'posts'){
         //////////////////////////////////////////////////////////////////////////////////////////
         // Post listing
         // The Image is a link to parent post
         //////////////////////////////////////////////////////////////////////////////////////////
-        $output .= "Image preset<br>";
+        $output .= "Image type<br>";
 
         $selector = "gallery-{$instance}";
         $output = apply_filters('gallery_style', "
@@ -1413,7 +1397,7 @@ function my_post_gallery( $output, $attr) {
         }
 
         $output .= '</div>';
-        $output .= '<br>END of gallery<br>__________<br>';
+        $output .= '<br>END of gallery | type:posts<br>__________<br>';
         return $output;
     } 
 
@@ -1515,6 +1499,10 @@ function my_post_gallery( $output, $attr) {
 
 
     // $output .= '<br>END of post<br>__________<br>';
+
+    // END OF GALLERY RENDERING
+
+
 
 
 }
