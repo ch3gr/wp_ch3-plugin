@@ -67,6 +67,9 @@ include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'Photoshop_File_Info.php');
 include( plugin_dir_path( __FILE__ ) . 'ch3-metadata.php');
 
 
+// 2560px large images auto resize. Was introduced @ v5.3
+add_filter( 'big_image_size_threshold', '__return_false' );
+
 
 /***************************************************************
  * SECURITY : Exit if accessed directly
@@ -683,6 +686,33 @@ function select_wp_image_editors( $editors ) {
 
 
 
+
+/***************************************************************
+ * INTERMEDIATE FILES HAVE AN EXTRA _ AT THE END FOR EASY FILTERING
+ ***************************************************************/
+add_filter('image_make_intermediate_size', 'custom_rename_images');
+function custom_rename_images($image) {
+    // Split the $image path
+    $info = pathinfo($image);
+    $dir = $info['dirname'] . '/';
+    $ext = '.' . $info['extension'];
+    $name = wp_basename($image, '$ext');
+
+    // New Name
+    $new_name = $dir . substr($name, 0, -strlen($ext)) ."_". $ext;
+
+    // Rename the intermediate size
+    $did_it = rename($image, $new_name);
+
+    // Return if successful
+    if ($did_it) return $new_name;
+
+    // Return on fail
+    return $image;
+}
+
+
+
 /***************************************************************
  * CUSTOM UPLOAD location
  ***************************************************************/
@@ -690,93 +720,91 @@ function select_wp_image_editors( $editors ) {
 
 
 //  http://v4.ch3.gr/file/media.*
-//  http://v4.ch3.gr/file/img/ch3_145-33.jpg
-//  http://v4.ch3.gr/file/img/int/ch3_145-33_150x150.jpg
+//  http://v4.ch3.gr/file/ch3_145-33.jpg
+//  http://v4.ch3.gr/file/img/ch3_145-33_150x150.jpg
 
 // Store cached/derivative images to custom directory :: file/img/cached
 // Include the existing classes first in order to extend them.
-require_once ABSPATH.WPINC."/class-wp-image-editor.php";
-require_once ABSPATH.WPINC."/class-wp-image-editor-gd.php";
+// require_once ABSPATH.WPINC."/class-wp-image-editor.php";
+// require_once ABSPATH.WPINC."/class-wp-image-editor-gd.php";
 
-add_filter("wp_image_editors", "my_wp_image_editors");
-function my_wp_image_editors($editors) {
-    array_unshift($editors, "WP_Image_Editor_Custom");
+// add_filter("wp_image_editors", "my_wp_image_editors");
+// function my_wp_image_editors($editors) {
+//     array_unshift($editors, "WP_Image_Editor_Custom");
 
-    return $editors;
-}
+//     return $editors;
+// }
 
 
-class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
+// class WP_Image_Editor_Custom extends WP_Image_Editor_GD {
+//     public function generate_filename($prefix = NULL, $dest_path = NULL, $extension = NULL) {
+//         // If empty, generate a prefix with the parent method get_suffix().
+//         if(!$prefix)
+//             $prefix = $this->get_suffix();
 
-    public function generate_filename($prefix = NULL, $dest_path = NULL, $extension = NULL) {
-        // If empty, generate a prefix with the parent method get_suffix().
-        if(!$prefix)
-            $prefix = $this->get_suffix();
+//         // Determine extension and directory based on file path.
+//         $info = pathinfo($this->file);
+//         $dir  = $info['dirname'];
+//         $ext  = $info['extension'];
+//         // Determine image name.
+//         $name = wp_basename($this->file, ".$ext");
 
-        // Determine extension and directory based on file path.
-        $info = pathinfo($this->file);
-        $dir  = $info['dirname'];
-        $ext  = $info['extension'];
-
-        // Determine image name.
-        $name = wp_basename($this->file, ".$ext");
-
-        // Allow extension to be changed via method argument.
-        $new_ext = strtolower($extension ? $extension : $ext);
+//         // Allow extension to be changed via method argument.
+//         $new_ext = strtolower($extension ? $extension : $ext);
         
-        // Default to $_dest_path if method argument is not set or invalid.
-        if(!is_null($dest_path) && $_dest_path = realpath($dest_path))
-            $dir = $_dest_path;
+//         // Default to $_dest_path if method argument is not set or invalid.
+//         if(!is_null($dest_path) && $_dest_path = realpath($dest_path))
+//             $dir = $_dest_path;
 
-        // $dir = trailingslashit($dir)."{$prefix}/{$name}.{$new_ext}";
-        //.jpg and .jpeg, .png and .gif
-        // if( $new_ext == 'jpg' || $new_ext == 'jpeg' || $new_ext == 'png' || $new_ext == 'gif' )
-        global $customDir;
-        $dir = trailingslashit($dir). $customDir['intermediate'] . "/{$name}_{$prefix}.{$new_ext}";
-        return $dir;
-    }
-    //  Provide the same path when doing the multi resize
-    function multi_resize($sizes) {
-        global $customDir;
-        $sizes = parent::multi_resize($sizes);
-        foreach($sizes as $slug => $data)
-            $sizes[$slug]['file'] = $customDir['intermediate'] . "/" .$data['file'];
+//         // $dir = trailingslashit($dir)."{$prefix}/{$name}.{$new_ext}";
+//         //.jpg and .jpeg, .png and .gif
+//         // if( $new_ext == 'jpg' || $new_ext == 'jpeg' || $new_ext == 'png' || $new_ext == 'gif' )
+//         global $customDir;
+//         $dir = trailingslashit($dir). $customDir['intermediate'] . "/{$name}_{$prefix}.{$new_ext}";
+//         return $dir;
+//     }
+//     //  Provide the same path when doing the multi resize
+//     function multi_resize($sizes) {
+//         global $customDir;
+//         $sizes = parent::multi_resize($sizes);
+//         foreach($sizes as $slug => $data)
+//             $sizes[$slug]['file'] = $customDir['intermediate'] . "/" .$data['file'];
 
-        return $sizes;
-    }
-}
-
-
+//         return $sizes;
+//     }
+// }
 
 
 
 
-// NOT USED ANY MORE. FUCK THAT SHIT!!!
-
-// Checks if the uploaded file is of type image and adds a filter to change the upload directory
-// add_filter('wp_handle_upload_prefilter', 'custom_upload_filter' );
-function custom_upload_filter( $file ){
-    // print_ar( $file );
-    if (strpos( $file['type'], 'image') !== false) {
-        add_filter('upload_dir', 'image_dir');
-    }
-    return $file;
-}
 
 
-// Filter is only added for images when custom_upload_filter is also called. Trick that works
-function image_dir( $param ){
-    global $customDir;
+// // NOT USED ANY MORE. FUCK THAT SHIT!!!
 
-    $mydir = '/' . $customDir['images'];
+// // Checks if the uploaded file is of type image and adds a filter to change the upload directory
+// // add_filter('wp_handle_upload_prefilter', 'custom_upload_filter' );
+// function custom_upload_filter( $file ){
+//     // print_ar( $file );
+//     if (strpos( $file['type'], 'image') !== false) {
+//         add_filter('upload_dir', 'image_dir');
+//     }
+//     return $file;
+// }
 
-    $param['path'] = $param['path'] . $mydir;
-    $param['url'] = $param['url'] . $mydir;
 
-    remove_filter('upload_dir', 'image_dir');
+// // Filter is only added for images when custom_upload_filter is also called. Trick that works
+// function image_dir( $param ){
+//     global $customDir;
 
-    return $param;
-}
+//     $mydir = '/' . $customDir['images'];
+
+//     $param['path'] = $param['path'] . $mydir;
+//     $param['url'] = $param['url'] . $mydir;
+
+//     remove_filter('upload_dir', 'image_dir');
+
+//     return $param;
+// }
 
 
 
@@ -822,6 +850,7 @@ function populate_img_metadata($img_id) {
     if( $metadata['title'] != '' ){
         $updatedPost['post_title'] = $metadata['title'];
         $updatedPost['post_name'] = $metadata['title'];
+        $updatedPost['post_date'] = $metadata['date'];
         
         $alt .= $metadata['title'] .' ';
     }
@@ -858,7 +887,6 @@ function populate_img_metadata($img_id) {
     }
 
 
-
     wp_update_post( $updatedPost );
     update_post_meta( $img_id, '_wp_attachment_image_alt', $alt );
 
@@ -888,7 +916,11 @@ function filter_wp_generate_attachment_metadata( $metadata, $img_id ) {
         // constract the file name of the intermediate file on dist
         $intFile = $metadata['sizes'][$size]['file'] ;
         $intFile = wp_basename($intFile);
-        $intFile = $customDir['intermediate_full'] .'/'. $intFile;
+        $intFile = wp_normalize_path( wp_upload_dir()['path'] ) .'/'. $intFile;
+        
+        // $intFile = $customDir['uploads_full'] .'/'. $intFile;
+        // $intFile = $customDir['intermediate_full'] .'/'. $intFile;
+        
 
         // Check if the file exist, which is the case for images which don't generate all sizes
         if( is_file($intFile) ) {

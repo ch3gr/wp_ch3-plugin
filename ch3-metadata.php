@@ -206,11 +206,14 @@ function getMetadata($filename){
     // XMP
     $XMP_text = get_XMP_text( $jpeg_header_data );
     $XMP_array = read_XMP_array_from_text( $XMP_text );
-
     if( !is_null($XMP_array) && is_array($XMP_array) ){
+        // print("<pre>".print_r( $XMP_array ,true)."</pre>");
+
         $metadata['title'] = get_tag_value( $XMP_array, 'dc:title', 'tag', 'value');
-        $metadata['title'] = '';
         $metadata['caption'] = get_tag_value( $XMP_array, 'dc:description', 'tag', 'value');
+
+        if( $metadata['date'] == '' )
+            $metadata['date'] = get_tag_value( $XMP_array, 'xap:CreateDate', 'tag', 'value');
 
         // $metadata['product'] = get_tag_value( $XMP_array, 'dc:title', 'tag', 'value');
         // $metadata['event'] = get_tag_value( $XMP_array, 'mediapro:Event', 'tag', 'value');
@@ -230,13 +233,19 @@ function getMetadata($filename){
     unset($info);
     $size = getimagesize($filename, $info);
     $iptc = iptcparse($info['APP13']);
-    // $metadata = array_merge($metadata, $iptc);
+    // print("<pre>".print_r( $iptc ,true)."</pre>");
 
-    // if( $metadata['title'] == '' )
-    //     $metadata['title'] = $iptc['2#005'][0];
+
+    if( $metadata['title'] == '' )
+        $metadata['title'] = $iptc['2#005'][0];
 
     if( $metadata['caption'] == '' )
         $metadata['caption'] = $iptc['2#120'][0];
+
+    if( $metadata['date'] == '' ){
+        $metadata['date'] = $iptc['2#055'][0];
+        $metadata['date'] = substr($metadata['date'], 0,4) ."-". substr($metadata['date'], 4,2) ."-". substr($metadata['date'], 6,2);
+    }
 
     if( $metadata['city'] == '' )
         $metadata['city'] = $iptc['2#090'][0];
@@ -252,7 +261,7 @@ function getMetadata($filename){
     return $metadata;
 }
 
-//  Title
+//  Title (Some catalogue software call this Product)
 //  Caption
 //  Alt = location + city + state + country + keywords
 
