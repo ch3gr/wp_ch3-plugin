@@ -251,6 +251,7 @@ function getMetadata($filename){
     }
 
 
+
     unset($info);
     $size = getimagesize($filename, $info);
     $iptc = iptcparse($info['APP13']);
@@ -265,8 +266,10 @@ function getMetadata($filename){
 
     // if( $metadata['date'] == '' ){
     if( !isDate($metadata['date']) ){
-        $metadata['date'] = $iptc['2#055'][0];
-        $metadata['date'] = substr($metadata['date'], 0,4) ."-". substr($metadata['date'], 4,2) ."-". substr($metadata['date'], 6,2);
+        if( isDate($iptc['2#055'][0]) ){
+            $metadata['date'] = $iptc['2#055'][0];
+            $metadata['date'] = substr($metadata['date'], 0,4) ."-". substr($metadata['date'], 4,2) ."-". substr($metadata['date'], 6,2);
+        }
     }
 
     if( $metadata['city'] == '' )
@@ -280,9 +283,19 @@ function getMetadata($filename){
         $metadata['keywords'] = $iptc['2#025'];
 
 
-
+    // Last attempt to create a date from the filename hoping for a format ch3_130601_2184.gif
+    if( !isDate($metadata['date'])) {
+        
+        $basename = basename($filename);
+        if( substr($basename, 0, 4) == "ch3_") {
+            $metadata['date'] = substr($basename, 8,2)."/".substr($basename, 6,2)."/".substr($basename, 4,2);
+            if( !isDate($metadata['date']))
+                $metadata['date'] == '';
+        }
+    }
 
     return $metadata;
+        
 }
 
 //  Title (Some catalogue software call this Product)
