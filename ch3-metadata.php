@@ -171,6 +171,19 @@ function get_tag_values(array &$metadata, $tag, $keyname, $dataname){
 
 
 
+function isDate( $input ){
+    if( $input == '')
+        return false;
+    if( strlen($input) < 6)
+        return false;
+
+    $input = preg_replace('/[^0-9.]+/', '', $input);
+    if( substr($input, 0,1) == "0")
+        return false;
+
+    if( strlen($input) >= 6)
+        return true;
+}
 
 
 
@@ -203,6 +216,12 @@ function getMetadata($filename){
     if( !is_null($Exif_array) && is_array($Exif_array) )
         $metadata['date'] = get_tag_value( $Exif_array, 'Date and Time of Original', 'Tag Name', 'Text Value');
 
+
+    
+    // if( substr($metadata['date'],0,1) == "0" );
+    //     echo "LALAL<br>";
+
+
     // XMP
     $XMP_text = get_XMP_text( $jpeg_header_data );
     $XMP_array = read_XMP_array_from_text( $XMP_text );
@@ -212,8 +231,11 @@ function getMetadata($filename){
         $metadata['title'] = get_tag_value( $XMP_array, 'dc:title', 'tag', 'value');
         $metadata['caption'] = get_tag_value( $XMP_array, 'dc:description', 'tag', 'value');
 
-        if( $metadata['date'] == '' )
+        // Check for the date in a couple of different tags
+        if( !isDate($metadata['date']) )
             $metadata['date'] = get_tag_value( $XMP_array, 'xap:CreateDate', 'tag', 'value');
+        if( !isDate($metadata['date']) )
+            $metadata['date'] = get_tag_value( $XMP_array, 'photoshop:DateCreated', 'tag', 'value');
 
         // $metadata['product'] = get_tag_value( $XMP_array, 'dc:title', 'tag', 'value');
         // $metadata['event'] = get_tag_value( $XMP_array, 'mediapro:Event', 'tag', 'value');
@@ -229,7 +251,6 @@ function getMetadata($filename){
     }
 
 
-
     unset($info);
     $size = getimagesize($filename, $info);
     $iptc = iptcparse($info['APP13']);
@@ -242,7 +263,8 @@ function getMetadata($filename){
     if( $metadata['caption'] == '' )
         $metadata['caption'] = $iptc['2#120'][0];
 
-    if( $metadata['date'] == '' ){
+    // if( $metadata['date'] == '' ){
+    if( !isDate($metadata['date']) ){
         $metadata['date'] = $iptc['2#055'][0];
         $metadata['date'] = substr($metadata['date'], 0,4) ."-". substr($metadata['date'], 4,2) ."-". substr($metadata['date'], 6,2);
     }
@@ -256,6 +278,8 @@ function getMetadata($filename){
 
     if( !count($metadata['keywords']) )
         $metadata['keywords'] = $iptc['2#025'];
+
+
 
 
     return $metadata;

@@ -850,10 +850,14 @@ function populate_img_metadata($img_id) {
     if( $metadata['title'] != '' ){
         $updatedPost['post_title'] = $metadata['title'];
         $updatedPost['post_name'] = $metadata['title'];
-        $updatedPost['post_date'] = $metadata['date'];
         
         $alt .= $metadata['title'] .' ';
     }
+    if( $metadata['date'] != '' ){
+        // echo "++ SETTING DATE ". $metadata['date'];
+        $updatedPost['post_date'] = $metadata['date'];
+    }
+
     $caption = $metadata['caption'];
     if( $caption != '' ) {
         // if(0){
@@ -890,6 +894,9 @@ function populate_img_metadata($img_id) {
     wp_update_post( $updatedPost );
     update_post_meta( $img_id, '_wp_attachment_image_alt', $alt );
 
+    if(1){
+        echo $metadata['title'] ." ". $metadata['caption'];
+    }
 
 
 
