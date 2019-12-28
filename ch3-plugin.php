@@ -19,11 +19,22 @@ Author URI: http://ch3.gr
 // Regenerate Thumbnails
 
 
+// CUSTOM UPLOAD DIRECTORY
+define('UPLOADS', 'file');
 
+// DISABLE AUTO DATE FOLDER STRUCTURE 
+update_option( 'uploads_use_yearmonth_folders', 0);
+
+// DISABLE AUTO RESIZE :: 2560px large images auto resize. Was introduced @ v5.3
+add_filter( 'big_image_size_threshold', '__return_false' );
+
+// MAX UPLOAD SIZE
+ini_set( 'upload_max_size' , '64M' );
 
 
 // include 'vars.php';
 // ini_set('max_execution_time', 60*60*10);
+
 
 
 // error_reporting ( 0 );
@@ -45,11 +56,7 @@ include( plugin_dir_path( __FILE__ ) . $toolkit_Dir. 'Photoshop_File_Info.php');
 include( plugin_dir_path( __FILE__ ) . 'ch3-metadata.php');
 
 
-// 2560px large images auto resize. Was introduced @ v5.3
-add_filter( 'big_image_size_threshold', '__return_false' );
 
-// Set maximum upload size
-ini_set( 'upload_max_size' , '64M' );
 
 
 
@@ -326,7 +333,7 @@ function filter_wp_generate_attachment_metadata( $metadata, $img_id ) {
     // All data exist in $metadata, don't use the wp function to query DB
 
     // Uses global var for custom folder structure
-    global $customDir;
+    // global $customDir;
 
     // Get metadata - function from PJMT
     // Only XMP for the time, hopefully no need to add Exif
