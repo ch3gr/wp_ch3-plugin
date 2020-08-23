@@ -8,7 +8,7 @@ Plugin Name: ch3 Plugin
 Plugin URI:
 Description: Plugin for all back end functionality
 Author: Georgios Cherouvim
-Version: 1.0
+Version: 1.1
 Author URI: http://ch3.gr
 */
 
@@ -33,7 +33,7 @@ ini_set( 'upload_max_size' , '64M' );
 
 
 // include 'vars.php';
-// ini_set('max_execution_time', 60*60*10);
+ini_set('max_execution_time', 60*60*10);
 
 
 
@@ -391,6 +391,7 @@ function filter_wp_generate_attachment_metadata( $metadata, $img_id ) {
 /***************************************************************
  * Bulk Action to update images
  ***************************************************************/
+/*
 function register_my_bulk_update_images($bulk_actions) {
   $bulk_actions['bulk_update_images'] = __( 'Update Images', 'bulk_update_images');
   return $bulk_actions;
@@ -426,7 +427,7 @@ function my_bulk_action_admin_notice() {
   }
 }
 add_action( 'admin_notices', 'my_bulk_action_admin_notice' );
-
+*/
 
 
 
@@ -477,14 +478,14 @@ add_action( 'post_submitbox_misc_actions', 'add_rating_field' );
 function add_rating_field($post){
     wp_nonce_field( plugin_basename( __FILE__ ), 'rating_nonce' );
 
-    // get pre existing rating value
-    $value = get_post_meta( $_GET['post'], 'rating', true );
-    if( $value == '' )
-        $value = 0;
 
     echo '<div class="misc-pub-section">';
-    echo '<span class="dashicons dashicons-chart-bar" style="vertical-align: sub"></span>';
-    echo '<span class="rating" style="padding-left: 8px">Post Rating : <input type="number" min="-10" max="10" name="rating_value" value="'.$value.'" style="width: 4em"></span>';
+    echo '<span class="dashicons dashicons-star-filled" style="vertical-align: sub"></span>';
+
+    if( get_post_meta( $_GET['post'], 'rating', true ) == 1 )
+        echo '<span class="rating" style="padding-left: 8px">Rated : <input type="checkbox" name="rating_value" checked value="rated" style=""></span>';
+    else
+        echo '<span class="rating" style="padding-left: 8px">Rated : <input type="checkbox" name="rating_value" value="rated" style=""></span>';
     echo '</div>';
 
 
@@ -516,8 +517,15 @@ function rating_save($post_id) {
 
 
     // get input rating and store it on the post metadata
-    $value = $_POST['rating_value'];
-    // echo $value.'<br>';
+    // $value = $_POST['rating_value'];
+    // echo 'V : ' . $value . '<br>';
+    // update_post_meta( $post_id, 'rating', $value );
+
+    if( $_POST['rating_value'] == "rated" )
+        $value = 1;
+    else
+        $value = 0;
+
     update_post_meta( $post_id, 'rating', $value );
     
 }
@@ -538,7 +546,7 @@ add_filter( 'manage_post_posts_columns', 'add_column_rating' );
  * @return array
  */
 function add_column_rating( $columns ) {
-    $columns['rating'] = 'Rating';
+    $columns['rating'] = 'Rated';
     return $columns;
 }
 
@@ -554,35 +562,45 @@ function column_rating_content( $column_name, $post_id ) {
         return;
  
     $value = get_post_meta( $post_id, 'rating', true );
-    echo $value ;
+    if( $value )
+        echo '<span class="dashicons dashicons-star-filled" style="vertical-align: sub"></span>';
+    // echo $value ;
 }
 
 
 /***************************************************************/
 // Quick edit display
 
+
 add_action( 'quick_edit_custom_box', 'quick_edit_rating', 10, 2 );
-/**
- * Add Rating to quick edit screen
- * @param string $column_name Custom column name, used to check
- * @param string $post_type
- * @return void
- */
+
 function quick_edit_rating( $column_name, $post_type ) {
     if ( 'rating' != $column_name )
         return;
 
     wp_nonce_field( plugin_basename( __FILE__ ), 'rating_nonce' );
-    echo '<div class="inline-edit-group wp-clearfix">';
-    echo '<input type="number" min="-10" max="10" name="rating_value" class="ratingClass" value="1111">Rating ';
+    echo '<div class="inline-edit-group wp-clearfix" >';
+    echo '<span class="dashicons dashicons-star-filled" style="vertical-align: sub"></span>';
+    echo '<input type="checkbox" name="rating_value" class="ratingClass" value="rated">Rated ';
+    
     echo '</div>';
 
 
 }
 
+
+
+
+
+
+
 /***************************************************************/
 // Quick edit save
 // add_action( 'save_post', 'quick_edit_rating_save', 20, 1 );
+
+// BUG - the check box doesn't show the correct state when re-opened, right after quick update
+
+
 /**
  * Save quick edit data
  * @param int $post_id
@@ -595,12 +613,13 @@ function quick_edit_rating_save( $post_id ) {
     if ( ! current_user_can( 'edit_post', $post_id ) || 'post' != $_POST['post_type'] )
         return $post_id;
  
-    // $data = get_post_meta( $post_id, 'rating', true );
-    $value = $_POST['rating_value'];
-    update_post_meta( $post_id, 'rating', $value );
 
-    // echo '<br>AAAAAA<br>';
-    // echo $_POST['rating_value'];
+    if( $_POST['rating_value'] == "rated" )
+        $value = 1;
+    else
+        $value = 0;
+
+    update_post_meta( $post_id, 'rating', 9 );
 }
 
 
@@ -620,8 +639,11 @@ function quick_edit_rating_javascript() {
     <script type="text/javascript">
     function get_rating( fieldValue ) {
         inlineEditPost.revert();
-        // jQuery( '.ratingClass' ).attr( 'number', 7  );
-        jQuery( '.ratingClass' ).val( fieldValue );
+        if( fieldValue == 1)
+            jQuery( '.ratingClass' ).prop('checked', true);
+        else
+            jQuery( '.ratingClass' ).prop('checked', false);
+
     }
     </script>
 <?php
@@ -670,331 +692,3 @@ function expand_quick_edit_link( $actions, $post ) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/***************************************************************
- * GALLERY UPGRADE
- ***************************************************************/
-
-
-/***************************************************************
- * EDIT GALLERY - TYPE option
- ***************************************************************/
-
-// CHECK :: https://wordpress.stackexchange.com/questions/212708/allowing-for-multiple-template-views-on-the-gallery-settings-page-when-using-the
-
-add_action('print_media_templates', function() {
-
-    // define your backbone template;
-    // the "tmpl-" prefix is required,
-    // and your input field should have a data-setting attribute
-    // matching the shortcode name
-    $gallery_types = apply_filters('print_media_templates_gallery_settings_types',
-                                   array(
-                                       'images'      => ' Images',
-                                       'posts'         => ' Posts',
-                                       'default_val' => ' Default'));
-    ?>
-    <script type="text/html" id="tmpl-custom-gallery-type-setting">
-        <label class="setting">
-            <hr><hr>
-            <span><?php _e('Layout Type'); ?></span>
-            <select data-setting="type"><?php
-                foreach($gallery_types as $key => $value) {
-                    echo "<option value=\"$key\">$value</option>";
-                }
-                ?>
-            </select>
-        </label>
-    </script>
-
-    <script>
-
-        jQuery(document).ready(function () {
-
-            // add your shortcode attribute and its default value to the
-            // gallery settings list; $.extend should work as well...
-            _.extend(wp.media.gallery.defaults, {
-                type: 'default_val'
-            });
-
-            // join default gallery settings template with yours -- store in list
-            if (!wp.media.gallery.templates) wp.media.gallery.templates = ['gallery-settings'];
-            wp.media.gallery.templates.push('custom-gallery-type-setting');
-
-            // loop through list -- allowing for other templates/settings
-            wp.media.view.Settings.Gallery = wp.media.view.Settings.Gallery.extend({
-                template: function (view) {
-                    var output = '';
-                    for (var i in wp.media.gallery.templates) {
-                        output += wp.media.template(wp.media.gallery.templates[i])(view);
-                    }
-                    return output;
-                }
-            });
-
-        });
-
-    </script>
-    <?php
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// GALLERY RENDERING
-// Should this be in the theme?
-
-add_filter( 'post_gallery', 'my_post_gallery', 10, 2 );
-function my_post_gallery( $output, $attr) {
-    global $post, $wp_locale;
-
-    static $instance = 0;
-    $instance++;
-
-    // We're trusting author input, so let's at least make sure it looks like a valid orderby statement
-    if ( isset( $attr['orderby'] ) ) {
-        $attr['orderby'] = sanitize_sql_orderby( $attr['orderby'] );
-        if ( !$attr['orderby'] )
-            unset( $attr['orderby'] );
-    }
-
-    extract(shortcode_atts(array(
-        'type'     => '',
-        'order'      => 'ASC',
-        'orderby'    => 'menu_order ID',
-        'id'         => $post->ID,
-        'itemtag'    => 'dl',
-        'icontag'    => 'dt',
-        'captiontag' => 'dd',
-        'columns'    => 3,
-        'size'       => 'thumbnail',
-        'include'    => '',
-        'exclude'    => ''
-    ), $attr));
-
-    $id = intval($id);
-    $output = '';
-
-
-
-
-    if( $type == 'images' || $type == ''){
-        //////////////////////////////////////////////////////////////////////////////////////////
-        // Image Gallery
-        //////////////////////////////////////////////////////////////////////////////////////////
-
-        $output .= "Image type<br>";
-
-
-        $selector = "gallery-{$instance}";
-        $output = apply_filters('gallery_style', "
-            <style type='text/css'>
-                #{$selector} {
-                    margin: auto;
-                }
-                #{$selector} img {
-                    border: 1px solid red;
-                }
-                
-            </style>
-            <!-- see gallery_shortcode() in wp-includes/media.php -->
-            <div id='$selector' class='gallery galleryid-{$id}'>");
-
-
-        $ids = explode(",", $include);
-        foreach( $ids as $id ) {
-            // $output .= '<div id=""'
-            $output .= wp_get_attachment_image( $id, 'large', 0, '' );
-            
-            // $output .= "bb";
-        }
-
-        $output .= '</div>';
-        $output .= '<br>END of gallery | type:images<br>__________<br>';
-        return $output;
-
-    }
-
-
-
-
-
-
-    else if( $type == 'posts'){
-        //////////////////////////////////////////////////////////////////////////////////////////
-        // Post listing
-        // The Image is a link to parent post
-        //////////////////////////////////////////////////////////////////////////////////////////
-        $output .= "Image type<br>";
-
-        $selector = "gallery-{$instance}";
-        $output = apply_filters('gallery_style', "
-            <style type='text/css'>
-                #{$selector} {
-                    margin: auto;
-                }
-                #{$selector} img {
-                    border: 1px solid green;
-                }
-                
-            </style>
-            <!-- see gallery_shortcode() in wp-includes/media.php -->
-            <div id='$selector' class='gallery galleryid-{$id}'>");
-
-
-        $ids = explode(",", $include);
-        foreach( $ids as $id ) {
-            $output .= '<a href="'. get_permalink( wp_get_post_parent_id($id) ) .'">';
-            $output .= wp_get_attachment_image( $id, 'large', 0, '' );
-            $output .= '</a>';
-            
-        }
-
-        $output .= '</div>';
-        $output .= '<br>END of gallery | type:posts<br>__________<br>';
-        return $output;
-    } 
-
-
-
-
-
-
-
-
-
-
-
-    else {
-        //////////////////////////////////////////////////////////////////////////////////////////
-        // Custom Order
-
-        if ( 'RAND' == $order )
-            $orderby = 'none';
-
-        if ( !empty($include) ) {
-            $include = preg_replace( '/[^0-9,]+/', '', $include );
-            $_attachments = get_posts( array('include' => $include, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $order, 'orderby' => $orderby) );
-
-            $attachments = array();
-            foreach ( $_attachments as $key => $val ) {
-                $attachments[$val->ID] = $_attachments[$key];
-            }
-        } elseif ( !empty($exclude) ) {
-            $exclude = preg_replace( '/[^0-9,]+/', '', $exclude );
-            $attachments = get_children( array('post_parent' => $id, 'exclude' => $exclude, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $order, 'orderby' => $orderby) );
-        } else {
-            $attachments = get_children( array('post_parent' => $id, 'post_status' => 'inherit', 'post_type' => 'attachment', 'post_mime_type' => 'image', 'order' => $order, 'orderby' => $orderby) );
-        }
-
-        if ( empty($attachments) )
-            return '';
-
-        if ( is_feed() ) {
-            $output = "\n";
-            foreach ( $attachments as $att_id => $attachment )
-                $output .= wp_get_attachment_link($att_id, $size, true) . "\n";
-            return $output;
-        }
-
-        $itemtag = tag_escape($itemtag);
-        $captiontag = tag_escape($captiontag);
-        $columns = intval($columns);
-        $itemwidth = $columns > 0 ? floor(100/$columns) : 100;
-        $float = is_rtl() ? 'right' : 'left';
-
-        $selector = "gallery-{$instance}";
-
-        $output = apply_filters('gallery_style', "
-            <style type='text/css'>
-                #{$selector} {
-                    margin: auto;
-                }
-                #{$selector} .gallery-item {
-                    float: {$float};
-                    margin-top: 10px;
-                    text-align: center;
-                    width: {$itemwidth}%;           }
-                #{$selector} img {
-                    border: 2px solid #cfcfcf;
-                }
-                #{$selector} .gallery-caption {
-                    margin-left: 0;
-                }
-            </style>
-            <!-- see gallery_shortcode() in wp-includes/media.php -->
-            <div id='$selector' class='gallery galleryid-{$id}'>");
-
-        $i = 0;
-        foreach ( $attachments as $id => $attachment ) {
-            $link = isset($attr['link']) && 'file' == $attr['link'] ? wp_get_attachment_link($id, $size, false, false) : wp_get_attachment_link($id, $size, true, false);
-
-            $output .= "<{$itemtag} class='gallery-item'>";
-            $output .= "
-                <{$icontag} class='gallery-icon'>
-                    $link
-                </{$icontag}>";
-            if ( $captiontag && trim($attachment->post_excerpt) ) {
-                $output .= "
-                    <{$captiontag} class='gallery-caption'>
-                    " . wptexturize($attachment->post_excerpt) . "
-                    </{$captiontag}>";
-            }
-            $output .= "</{$itemtag}>";
-            if ( $columns > 0 && ++$i % $columns == 0 )
-                $output .= '<br style="clear: both" />';
-        }
-
-        $output .= "
-                <br style='clear: both;' />
-            </div>\n";
-        return $output;
-    } 
-
-
-    // $output .= '<br>END of post<br>__________<br>';
-
-    // END OF GALLERY RENDERING
-
-
-
-
-}
