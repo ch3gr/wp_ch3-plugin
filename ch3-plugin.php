@@ -8,7 +8,7 @@ Plugin Name: ch3 Plugin
 Plugin URI:
 Description: Plugin for all back end functionality
 Author: Georgios Cherouvim
-Version: 1.1
+Version: 1.1.1
 Author URI: http://ch3.gr
 */
 
@@ -20,7 +20,7 @@ Author URI: http://ch3.gr
 
 
 // CUSTOM UPLOAD DIRECTORY
-define('UPLOADS', 'file');
+// define('UPLOADS', 'file');
 
 // DISABLE AUTO DATE FOLDER STRUCTURE 
 update_option( 'uploads_use_yearmonth_folders', 0);
@@ -196,8 +196,8 @@ function array_search_partial(& $arr, $keyword) {
 add_filter( 'wp_image_editors', 'select_wp_image_editors' );
  
 function select_wp_image_editors( $editors ) {
-    return array( 'WP_Image_Editor_GD', 'WP_Image_Editor_Imagick' );        // Default 
-    // return array( 'WP_Image_Editor_Imagick', 'WP_Image_Editor_GD' );
+    // return array( 'WP_Image_Editor_GD', 'WP_Image_Editor_Imagick' );        // Default 
+    return array( 'WP_Image_Editor_Imagick', 'WP_Image_Editor_GD' );
 }
 
 
