@@ -272,7 +272,7 @@ function populate_img_metadata($img_id) {
         $updatedPost['post_title'] = $metadata['title'];
         $updatedPost['post_name'] = $metadata['title'];
         
-        $alt .= $metadata['title'] .' ';
+        $alt .= $metadata['title'];
     }
     if( $metadata['date'] != '' ){
         // echo "++ SETTING DATE ". $metadata['date'];
@@ -288,38 +288,37 @@ function populate_img_metadata($img_id) {
         $updatedPost['post_excerpt'] = '';              // Caption
         $updatedPost['post_content'] = $caption;        // Description
 
-        $alt .=  wp_strip_all_tags($caption)  .' ';
+        if( $alt != '' )
+            $alt .= ' - ';
+        $alt .=  wp_strip_all_tags($caption);
 
     }
 
     //  Populate the Alternative Text. Not the best content, but better than nothing.
     if(is_array($metadata['keywords']) && count($metadata['keywords']) != 0) {
-        $alt .= '- ';
-        foreach ($metadata['keywords'] as $value)
-            $alt .= $value .' ';
+        foreach ($metadata['keywords'] as $value){
+            if( $alt != '' )
+                $alt .= ', ';
+            $alt .= $value;
+        }
     }
 
-    if( $metadata['location']!='' || $metadata['city']!='' || $metadata['state']!='' || $metadata['country']!='') {
-        $alt .= '- ';
-        if( $metadata['location'] != '' )
-            $alt .= $metadata['location'] .' ';
-        if( $metadata['city'] != '' )
-            $alt .= $metadata['city'] .' ';
-        if( $metadata['state'] != '' )
-            $alt .= $metadata['state'] .' ';
-        if( $metadata['country'] != '' )
-            $alt .= $metadata['country'] .' ';
-    }
+    //  Probably bad idea to spam alt with location
+    // if( $metadata['location']!='' || $metadata['city']!='' || $metadata['state']!='' || $metadata['country']!='') {
+    //     $alt .= '- ';
+    //     if( $metadata['location'] != '' )
+    //         $alt .= $metadata['location'] .' ';
+    //     if( $metadata['city'] != '' )
+    //         $alt .= $metadata['city'] .' ';
+    //     if( $metadata['state'] != '' )
+    //         $alt .= $metadata['state'] .' ';
+    //     if( $metadata['country'] != '' )
+    //         $alt .= $metadata['country'] .' ';
+    // }
 
 
     wp_update_post( $updatedPost );
     update_post_meta( $img_id, '_wp_attachment_image_alt', $alt );
-
-    if(1){
-        echo $metadata['title'] ." ". $metadata['caption'];
-    }
-
-
 
 }
 
@@ -397,8 +396,6 @@ function register_my_bulk_update_images($bulk_actions) {
   return $bulk_actions;
 }
 add_filter( 'bulk_actions-upload', 'register_my_bulk_update_images' );
-
-
  
 function bulk_update_images_handler( $redirect_to, $doaction, $post_ids ) {
   if ( $doaction !== 'bulk_update_images' ) {
@@ -413,8 +410,6 @@ function bulk_update_images_handler( $redirect_to, $doaction, $post_ids ) {
   return $redirect_to;
 }
 add_filter( 'handle_bulk_actions-upload', 'bulk_update_images_handler', 10, 3 );
-
-
 function my_bulk_action_admin_notice() {
   if ( ! empty( $_REQUEST['bulk_update_images'] ) ) {
     $image_count = intval( $_REQUEST['bulk_update_images'] );
@@ -678,17 +673,3 @@ function expand_quick_edit_link( $actions, $post ) {
 
 
 // https://ducdoan.com/add-custom-field-to-quick-edit-screen-in-wordpress/
-
-
-
-
-
-
-
-
-
-
-
-
-
-
