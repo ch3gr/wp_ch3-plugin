@@ -268,12 +268,22 @@ function populate_img_metadata($img_id) {
 
     $updatedPost['ID'] = $img_id;
 
-    if( $metadata['title'] != '' ){
+    if( $metadata['title'] != '' )
+    {
         $updatedPost['post_title'] = $metadata['title'];
         $updatedPost['post_name'] = $metadata['title'];
         
         $alt .= $metadata['title'];
     }
+    else{
+    // In case I remove caption from source img and want to update WP
+        $filename = basename(get_attached_file( $img_id ));
+        $filename = pathinfo($filename,PATHINFO_FILENAME);
+
+        $updatedPost['post_title'] = $filename;
+        $updatedPost['post_name'] = $filename;
+    }
+
     if( $metadata['date'] != '' ){
         // echo "++ SETTING DATE ". $metadata['date'];
         $updatedPost['post_date'] = $metadata['date'];
@@ -284,7 +294,6 @@ function populate_img_metadata($img_id) {
         // if(0){
         if( (strpos($caption,'<a')!== false || strpos($caption,'< a')!== false ) && strpos($caption,'>')!== false)
                 $caption = str_replace('">','" rel="noopener" target="_blank">', $caption);
-
         $updatedPost['post_excerpt'] = '';              // Caption
         $updatedPost['post_content'] = $caption;        // Description
 
@@ -293,6 +302,10 @@ function populate_img_metadata($img_id) {
         $alt .=  wp_strip_all_tags($caption);
 
     }
+    else if( get_post($img_id)->post_content != '' )
+        $updatedPost['post_content'] = '';
+        // In case I remove caption from source img and want to update WP
+
 
     //  Populate the Alternative Text. Not the best content, but better than nothing.
     if(is_array($metadata['keywords']) && count($metadata['keywords']) != 0) {
