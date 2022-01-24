@@ -490,7 +490,8 @@ function add_rating_field($post){
     echo '<div class="misc-pub-section">';
     echo '<span class="dashicons dashicons-star-filled" style="vertical-align: sub"></span>';
 
-    if( get_post_meta( $_GET['post'], 'rating', true ) == 1 )
+    if( $post->rating == 1 )
+    // if( get_post_meta( $_GET['post'], 'rating', true ) == 1 )
         echo '<span class="rating" style="padding-left: 8px">Rated : <input type="checkbox" name="rating_value" checked value="rated" style=""></span>';
     else
         echo '<span class="rating" style="padding-left: 8px">Rated : <input type="checkbox" name="rating_value" value="rated" style=""></span>';
@@ -516,11 +517,14 @@ function rating_save($post_id) {
     if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE )
         return $post_id;
 
+    // php8
     // security check
-    if ( !wp_verify_nonce( $_POST['rating_nonce'], plugin_basename( __FILE__ ) ) )
-        return $post_id;
+    // if ( !wp_verify_nonce( $_POST['rating_nonce'], plugin_basename( __FILE__ ) ) )
+    //     return $post_id;
     
-    if ( ! current_user_can( 'edit_post', $post_id ) || 'post' != $_POST['post_type'] )
+    // php8
+    // if ( ! current_user_can( 'edit_post', $post_id ) || 'post' != $_POST['post_type'] )
+    if ( ! current_user_can( 'edit_post', $post_id ) )
         return $post_id;
 
 
@@ -529,7 +533,8 @@ function rating_save($post_id) {
     // echo 'V : ' . $value . '<br>';
     // update_post_meta( $post_id, 'rating', $value );
 
-    if( $_POST['rating_value'] == "rated" )
+    if( isset($_POST['rating_value']) && $_POST['rating_value'] == "rated")
+    // if( $_POST['rating_value'] != "rated" )
         $value = 1;
     else
         $value = 0;
